@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Stats>
+  <TotalGames>1</TotalGames>
+  <BestWord Text="ЧАДО" Score="18" Player="Мама" />
+  <BestMove Score="18" Player="Мама" />
+  <Players>
+    <Player Name="Мама" Games="1" Wins="1" TotalScore="26" BestScore="26" />
+    <Player Name="Папа" Games="1" Wins="0" TotalScore="0" BestScore="0" />
+  </Players>
+</Stats>

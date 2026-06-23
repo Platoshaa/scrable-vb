@@ -1,48 +1,74 @@
 ﻿Public Class ScoreManager
 
-    Public Shared Function CalculateScore(
+    Public Shared Function CalculateWordsScore(
         tiles As List(Of TileInstance),
-        board As Board) As Integer
+        board As Board
+    ) As Integer
 
         Dim total As Integer = 0
 
-        Dim wordMultiplier As Integer = 1
+        Dim words =
+            WordBuilder.BuildWordTiles(tiles)
 
-        For Each t In tiles
+        For Each wordTiles As List(Of TileInstance) In words
 
-            If t.BoardX = -1 Then Continue For
-
-            If t.Confirmed Then Continue For
-
-            Dim value =
-                t.Tile.Value
-
-            Dim cell =
-                board.GetCell(
-                    t.BoardX,
-                    t.BoardY)
-
-            Select Case cell.Bonus
-
-                Case BonusType.DoubleLetter
-                    value *= 2
-
-                Case BonusType.TripleLetter
-                    value *= 3
-
-                Case BonusType.DoubleWord
-                    wordMultiplier *= 2
-
-                Case BonusType.TripleWord
-                    wordMultiplier *= 3
-
-            End Select
-
-            total += value
+            total += CalculateWordScore(
+                wordTiles,
+                board)
 
         Next
 
-        Return total * wordMultiplier
+        Return total
+
+    End Function
+
+
+    Public Shared Function CalculateWordScore(
+        wordTiles As List(Of TileInstance),
+        board As Board
+    ) As Integer
+
+        Dim wordScore As Integer = 0
+        Dim wordMultiplier As Integer = 1
+
+        For Each t As TileInstance In wordTiles
+
+            Dim letterScore As Integer =
+                t.Tile.Value
+
+            If Not t.Confirmed Then
+
+                Dim cell =
+                    board.GetCell(
+                        t.BoardX,
+                        t.BoardY)
+
+                Select Case cell.Bonus
+
+                    Case BonusType.DoubleLetter
+                        letterScore *= 2
+
+                    Case BonusType.TripleLetter
+                        letterScore *= 3
+
+                    Case BonusType.DoubleWord
+                        wordMultiplier *= 2
+
+                    Case BonusType.TripleWord
+                        wordMultiplier *= 3
+
+                    Case BonusType.Center
+                        wordMultiplier *= 1
+
+                End Select
+
+            End If
+
+            wordScore += letterScore
+
+        Next
+
+        Return wordScore * wordMultiplier
 
     End Function
 

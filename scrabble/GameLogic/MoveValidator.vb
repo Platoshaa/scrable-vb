@@ -1,115 +1,76 @@
 ﻿Public Class MoveValidator
 
     Public Shared Function ValidateMove(
-    tiles As List(Of TileInstance)
+        tiles As List(Of TileInstance)
     ) As Boolean
 
-        Dim moveTiles =
-        tiles.Where(
-            Function(t)
-                Return Not t.Confirmed AndAlso
-                       t.BoardX <> -1
-            End Function).ToList()
+        Dim newTiles As New List(Of TileInstance)
 
-        If moveTiles.Count <= 1 Then
-            Return True
-        End If
+        For Each t As TileInstance In tiles
 
+            If Not t.Confirmed AndAlso
+               t.BoardX <> -1 AndAlso
+               t.BoardY <> -1 Then
 
-        Dim sameRow =
-        moveTiles.All(
-            Function(t)
-                Return t.BoardY =
-                       moveTiles(0).BoardY
-            End Function)
+                newTiles.Add(t)
 
-        Dim sameColumn =
-        moveTiles.All(
-            Function(t)
-                Return t.BoardX =
-                       moveTiles(0).BoardX
-            End Function)
+            End If
 
-        If Not sameRow AndAlso
-       Not sameColumn Then
+        Next
 
+        If newTiles.Count = 0 Then
             Return False
-
         End If
 
+        Dim words =
+            WordBuilder.BuildWordTiles(tiles)
 
-        ' Проверка отсутствия разрывов
-        If sameRow Then
+        If words.Count = 0 Then
+            Return False
+        End If
 
-            Dim y = moveTiles(0).BoardY
+        ' Каждая новая буква должна входить хотя бы в одно слово
+        For Each newTile As TileInstance In newTiles
 
-            Dim minX =
-            moveTiles.Min(
-                Function(t) t.BoardX)
+            Dim used As Boolean = False
 
-            Dim maxX =
-            moveTiles.Max(
-                Function(t) t.BoardX)
+            For Each wordTiles As List(Of TileInstance) In words
 
-            For x = minX To maxX
+                For Each wt As TileInstance In wordTiles
 
-                If Not tiles.Any(
-                Function(t)
-                    Return t.BoardX = x AndAlso
-                           t.BoardY = y
-                End Function) Then
+                    If wt Is newTile Then
+                        used = True
+                        Exit For
+                    End If
 
-                    Return False
+                Next
 
-                End If
+                If used Then Exit For
 
             Next
 
-        Else
+            If Not used Then
+                Return False
+            End If
 
-            Dim x = moveTiles(0).BoardX
-
-            Dim minY =
-            moveTiles.Min(
-                Function(t) t.BoardY)
-
-            Dim maxY =
-            moveTiles.Max(
-                Function(t) t.BoardY)
-
-            For y = minY To maxY
-
-                If Not tiles.Any(
-                Function(t)
-                    Return t.BoardX = x AndAlso
-                           t.BoardY = y
-                End Function) Then
-
-                    Return False
-
-                End If
-
-            Next
-
-        End If
+        Next
 
         Return True
 
     End Function
+
+
     Public Shared Function FirstMoveUsesCenter(
-    tiles As List(Of TileInstance)
+        tiles As List(Of TileInstance)
     ) As Boolean
 
-        For Each t In tiles
+        For Each t As TileInstance In tiles
 
-            If Not t.Confirmed Then
+            If Not t.Confirmed AndAlso
+               t.BoardX = 7 AndAlso
+               t.BoardY = 7 Then
 
-                If t.BoardX = 7 AndAlso
-                   t.BoardY = 7 Then
-
-                    Return True
-
-                End If
+                Return True
 
             End If
 
@@ -118,4 +79,5 @@
         Return False
 
     End Function
+
 End Class

@@ -1,84 +1,90 @@
-﻿Imports System.Linq
+﻿Public Class WordBuilder
 
-
-Public Class WordBuilder
-
-    Public Shared Function BuildWord(
+    Public Shared Function BuildWords(
         tiles As List(Of TileInstance)
-        ) As String
+    ) As List(Of String)
 
-        Dim moveTiles =
-            tiles.Where(
-                Function(t)
-                    Return Not t.Confirmed AndAlso
-                           t.BoardX <> -1
-                End Function).ToList()
+        Dim result As New List(Of String)
 
-        If moveTiles.Count = 0 Then
-            Return ""
-        End If
+        Dim wordTileLists =
+            BuildWordTiles(tiles)
 
+        For Each wordTiles As List(Of TileInstance) In wordTileLists
 
-        Dim horizontal As Boolean
+            Dim word As String = ""
 
-        If moveTiles.Count > 1 Then
+            For Each t As TileInstance In wordTiles
+                word &= t.VisibleLetter
+            Next
 
-            horizontal =
-                moveTiles.All(
-                    Function(t)
-                        Return t.BoardY =
-                               moveTiles(0).BoardY
-                    End Function)
+            If word.Length > 1 Then
+                result.Add(word)
+            End If
 
-        Else
+        Next
 
-            ' Для одной буквы смотрим соседей
-            Dim t = moveTiles(0)
+        Return result
 
-            Dim hasLeftRight =
-                tiles.Any(
-                    Function(x)
-                        Return x.BoardY = t.BoardY AndAlso
-                        (x.BoardX = t.BoardX - 1 OrElse
-                         x.BoardX = t.BoardX + 1)
-                    End Function)
-
-            horizontal = hasLeftRight
-
-        End If
+    End Function
 
 
-        Dim result As String = ""
+    Public Shared Function BuildWordTiles(
+        tiles As List(Of TileInstance)
+    ) As List(Of List(Of TileInstance))
+
+        Dim result As New List(Of List(Of TileInstance))
+
+        For Each t As TileInstance In tiles
+
+            If Not t.Confirmed AndAlso
+               t.BoardX <> -1 AndAlso
+               t.BoardY <> -1 Then
+
+                Dim horizontalWord =
+                    BuildLine(tiles, t.BoardX, t.BoardY, True)
+
+                If horizontalWord.Count > 1 Then
+                    AddWordIfNew(result, horizontalWord)
+                End If
+
+                Dim verticalWord =
+                    BuildLine(tiles, t.BoardX, t.BoardY, False)
+
+                If verticalWord.Count > 1 Then
+                    AddWordIfNew(result, verticalWord)
+                End If
+
+            End If
+
+        Next
+
+        Return result
+
+    End Function
+
+
+    Private Shared Function BuildLine(
+        tiles As List(Of TileInstance),
+        startX As Integer,
+        startY As Integer,
+        horizontal As Boolean
+    ) As List(Of TileInstance)
+
+        Dim result As New List(Of TileInstance)
+
+        Dim x As Integer = startX
+        Dim y As Integer = startY
 
         If horizontal Then
 
-            Dim y = moveTiles(0).BoardY
-            Dim x = moveTiles(0).BoardX
-
-            ' Идем влево
-            While tiles.Any(
-                Function(t)
-                    Return t.BoardX = x - 1 AndAlso
-                           t.BoardY = y
-                End Function)
-
+            While TileAt(tiles, x - 1, y) IsNot Nothing
                 x -= 1
-
             End While
 
-            ' Идем вправо
-            While True
+            While TileAt(tiles, x, y) IsNot Nothing
 
-                Dim tile =
-                    tiles.FirstOrDefault(
-                        Function(t)
-                            Return t.BoardX = x AndAlso
-                                   t.BoardY = y
-                        End Function)
-
-                If tile Is Nothing Then Exit While
-
-                result &= tile.Tile.Letter
+                result.Add(
+                    TileAt(tiles, x, y))
 
                 x += 1
 
@@ -86,33 +92,14 @@ Public Class WordBuilder
 
         Else
 
-            Dim x = moveTiles(0).BoardX
-            Dim y = moveTiles(0).BoardY
-
-            ' Идем вверх
-            While tiles.Any(
-                Function(t)
-                    Return t.BoardX = x AndAlso
-                           t.BoardY = y - 1
-                End Function)
-
+            While TileAt(tiles, x, y - 1) IsNot Nothing
                 y -= 1
-
             End While
 
-            ' Идем вниз
-            While True
+            While TileAt(tiles, x, y) IsNot Nothing
 
-                Dim tile =
-                    tiles.FirstOrDefault(
-                        Function(t)
-                            Return t.BoardX = x AndAlso
-                                   t.BoardY = y
-                        End Function)
-
-                If tile Is Nothing Then Exit While
-
-                result &= tile.Tile.Letter
+                result.Add(
+                    TileAt(tiles, x, y))
 
                 y += 1
 
@@ -121,6 +108,69 @@ Public Class WordBuilder
         End If
 
         Return result
+
+    End Function
+
+
+    Private Shared Function TileAt(
+        tiles As List(Of TileInstance),
+        x As Integer,
+        y As Integer
+    ) As TileInstance
+
+        For Each t As TileInstance In tiles
+
+            If t.BoardX = x AndAlso
+               t.BoardY = y Then
+
+                Return t
+
+            End If
+
+        Next
+
+        Return Nothing
+
+    End Function
+
+
+    Private Shared Sub AddWordIfNew(
+        words As List(Of List(Of TileInstance)),
+        candidate As List(Of TileInstance)
+    )
+
+        Dim candidateKey =
+            GetWordKey(candidate)
+
+        For Each existing As List(Of TileInstance) In words
+
+            If GetWordKey(existing) = candidateKey Then
+                Exit Sub
+            End If
+
+        Next
+
+        words.Add(candidate)
+
+    End Sub
+
+
+    Private Shared Function GetWordKey(
+        wordTiles As List(Of TileInstance)
+    ) As String
+
+        Dim key As String = ""
+
+        For Each t As TileInstance In wordTiles
+
+            key &= t.BoardX.ToString()
+            key &= ","
+            key &= t.BoardY.ToString()
+            key &= ";"
+
+        Next
+
+        Return key
 
     End Function
 

@@ -85,10 +85,16 @@
       <DependentUpon>Form1.vb</DependentUpon>
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="GameLogic\StatsManager.vb" />
     <Compile Include="GameLogic\ConnectivityValidator.vb" />
     <Compile Include="GameLogic\DragManager.vb" />
     <Compile Include="GameLogic\MoveValidator.vb" />
     <Compile Include="Dictionary\WordBuilder.vb" />
+    <Compile Include="GameLogic\NewGameDialog.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="GameLogic\RackBalanceMode.vb" />
+    <Compile Include="GameLogic\RackBalancer.vb" />
     <Compile Include="GameLogic\ScoreManager.vb" />
     <Compile Include="GameLogic\TurnManager.vb" />
     <Compile Include="Players\Player.vb" />

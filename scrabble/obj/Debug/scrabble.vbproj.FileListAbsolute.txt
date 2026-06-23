@@ -12,3 +12,17 @@ C:\Users\Platosha\source\repos\scrabble\scrabble\obj\Debug\scrabble.xml
 C:\Users\Platosha\source\repos\scrabble\scrabble\obj\Debug\scrabble.pdb
 C:\Users\Platosha\source\repos\scrabble\scrabble\obj\Debug\scrabble.exe.config
 C:\Users\Platosha\source\repos\scrabble\scrabble\bin\Debug\russian.txt
+D:\web\scrabble\scrable-vb\scrabble\bin\Debug\russian.txt
+D:\web\scrabble\scrable-vb\scrabble\bin\Debug\scrabble.exe.config
+D:\web\scrabble\scrable-vb\scrabble\bin\Debug\scrabble.exe
+D:\web\scrabble\scrable-vb\scrabble\bin\Debug\scrabble.pdb
+D:\web\scrabble\scrable-vb\scrabble\bin\Debug\scrabble.xml
+D:\web\scrabble\scrable-vb\scrabble\obj\Debug\scrabble.vbproj.AssemblyReference.cache
+D:\web\scrabble\scrable-vb\scrabble\obj\Debug\scrabble.exe.config
+D:\web\scrabble\scrable-vb\scrabble\obj\Debug\scrabble.Form1.resources
+D:\web\scrabble\scrable-vb\scrabble\obj\Debug\scrabble.Resources.resources
+D:\web\scrabble\scrable-vb\scrabble\obj\Debug\scrabble.vbproj.GenerateResource.cache
+D:\web\scrabble\scrable-vb\scrabble\obj\Debug\scrabble.vbproj.CoreCompileInputs.cache
+D:\web\scrabble\scrable-vb\scrabble\obj\Debug\scrabble.exe
+D:\web\scrabble\scrable-vb\scrabble\obj\Debug\scrabble.xml
+D:\web\scrabble\scrable-vb\scrabble\obj\Debug\scrabble.pdb
