@@ -7,6 +7,7 @@ Public Class NewGameDialog
     Private txtPlayer1 As TextBox
     Private txtPlayer2 As TextBox
     Private numTargetScore As NumericUpDown
+    Private chkPlayer2Computer As CheckBox
 
     Private btnOk As Button
     Private btnCancel As Button
@@ -14,17 +15,19 @@ Public Class NewGameDialog
     Public Property Player1Name As String
     Public Property Player2Name As String
     Public Property TargetScore As Integer
+    Public Property Player2IsComputer As Boolean
 
 
     Public Sub New(
         currentPlayer1Name As String,
         currentPlayer2Name As String,
-        currentTargetScore As Integer)
+        currentTargetScore As Integer,
+        currentPlayer2IsComputer As Boolean)
 
         Me.Text = "Новая игра"
         Me.FormBorderStyle = FormBorderStyle.FixedDialog
         Me.StartPosition = FormStartPosition.CenterParent
-        Me.ClientSize = New Size(330, 185)
+        Me.ClientSize = New Size(350, 225)
         Me.MaximizeBox = False
         Me.MinimizeBox = False
         Me.BackColor = Color.FromArgb(0, 70, 0)
@@ -33,7 +36,8 @@ Public Class NewGameDialog
         CreateControls(
             currentPlayer1Name,
             currentPlayer2Name,
-            currentTargetScore)
+            currentTargetScore,
+            currentPlayer2IsComputer)
 
     End Sub
 
@@ -41,14 +45,15 @@ Public Class NewGameDialog
     Private Sub CreateControls(
         currentPlayer1Name As String,
         currentPlayer2Name As String,
-        currentTargetScore As Integer)
+        currentTargetScore As Integer,
+        currentPlayer2IsComputer As Boolean)
 
         Dim lblTitle As New Label()
         lblTitle.Text = "Параметры новой игры"
         lblTitle.Font = New Font("Arial", 11, FontStyle.Bold)
         lblTitle.ForeColor = Color.White
         lblTitle.Location = New Point(20, 15)
-        lblTitle.Size = New Size(280, 24)
+        lblTitle.Size = New Size(300, 24)
         Me.Controls.Add(lblTitle)
 
 
@@ -60,7 +65,7 @@ Public Class NewGameDialog
         Me.Controls.Add(lblPlayer1)
 
         txtPlayer1 = New TextBox()
-        txtPlayer1.Location = New Point(120, 52)
+        txtPlayer1.Location = New Point(130, 52)
         txtPlayer1.Size = New Size(180, 22)
         txtPlayer1.Text = currentPlayer1Name
         Me.Controls.Add(txtPlayer1)
@@ -74,21 +79,31 @@ Public Class NewGameDialog
         Me.Controls.Add(lblPlayer2)
 
         txtPlayer2 = New TextBox()
-        txtPlayer2.Location = New Point(120, 82)
+        txtPlayer2.Location = New Point(130, 82)
         txtPlayer2.Size = New Size(180, 22)
         txtPlayer2.Text = currentPlayer2Name
         Me.Controls.Add(txtPlayer2)
 
 
+        chkPlayer2Computer = New CheckBox()
+        chkPlayer2Computer.Text = "Игрок 2 — компьютер"
+        chkPlayer2Computer.ForeColor = Color.White
+        chkPlayer2Computer.BackColor = Color.FromArgb(0, 70, 0)
+        chkPlayer2Computer.Location = New Point(130, 110)
+        chkPlayer2Computer.Size = New Size(180, 22)
+        chkPlayer2Computer.Checked = currentPlayer2IsComputer
+        Me.Controls.Add(chkPlayer2Computer)
+
+
         Dim lblTarget As New Label()
         lblTarget.Text = "Цель очков:"
         lblTarget.ForeColor = Color.White
-        lblTarget.Location = New Point(20, 115)
+        lblTarget.Location = New Point(20, 145)
         lblTarget.Size = New Size(90, 22)
         Me.Controls.Add(lblTarget)
 
         numTargetScore = New NumericUpDown()
-        numTargetScore.Location = New Point(120, 112)
+        numTargetScore.Location = New Point(130, 142)
         numTargetScore.Size = New Size(90, 22)
         numTargetScore.Minimum = 20
         numTargetScore.Maximum = 1000
@@ -103,13 +118,12 @@ Public Class NewGameDialog
         End If
 
         numTargetScore.Value = currentTargetScore
-
         Me.Controls.Add(numTargetScore)
 
 
         btnOk = New Button()
         btnOk.Text = "Начать"
-        btnOk.Location = New Point(90, 145)
+        btnOk.Location = New Point(110, 185)
         btnOk.Size = New Size(100, 28)
         StyleButton(btnOk)
         AddHandler btnOk.Click, AddressOf btnOk_Click
@@ -118,12 +132,11 @@ Public Class NewGameDialog
 
         btnCancel = New Button()
         btnCancel.Text = "Отмена"
-        btnCancel.Location = New Point(200, 145)
+        btnCancel.Location = New Point(220, 185)
         btnCancel.Size = New Size(100, 28)
         StyleButton(btnCancel)
         btnCancel.DialogResult = DialogResult.Cancel
         Me.Controls.Add(btnCancel)
-
 
         Me.AcceptButton = btnOk
         Me.CancelButton = btnCancel
@@ -165,7 +178,6 @@ Public Class NewGameDialog
 
         End If
 
-
         If p2 = "" Then
 
             MessageBox.Show(
@@ -179,10 +191,10 @@ Public Class NewGameDialog
 
         End If
 
-
         Player1Name = p1
         Player2Name = p2
         TargetScore = CInt(numTargetScore.Value)
+        Player2IsComputer = chkPlayer2Computer.Checked
 
         Me.DialogResult = DialogResult.OK
         Me.Close()

@@ -1,5 +1,10 @@
 ﻿Imports System.Drawing
+Imports System.IO
 Imports System.Linq
+
+
+Imports System.Diagnostics
+
 
 Public Class Form1
 
@@ -11,26 +16,36 @@ Public Class Form1
     Private currentPlayer As Player
 
 
-    Private Const PlayerRackStartX As Integer = 545
-    Private Const Player1RackY As Integer = 120
-    Private Const Player2RackY As Integer = 260
     Private player1Name As String = "Мама"
     Private player2Name As String = "Папа"
-    Private Const CellSize As Integer = 60
-    Private Const StartX As Integer = 20
-    Private Const StartY As Integer = 20
+    Private Const AiThinkingDelayMs As Integer = 2000
 
-    Private Const RightPanelX As Integer = 940
-    Private Const RightPanelWidth As Integer = 300
+    Private lblAiThinking As New Label()
 
-    Private Const ActiveRackStartX As Integer = 980
-    Private Const ActiveRackStartY As Integer = 230
-    Private Const ActiveRackStepY As Integer = 70
+    Private aiThinkingWatch As Stopwatch = Nothing
+    Private aiThinkingShown As Boolean = False
 
-    Private Const OpponentRackStartX As Integer = 1120
-    Private Const OpponentRackStartY As Integer = 230
-    Private Const OpponentRackStepY As Integer = 70
+    Private Const MaxCellSize As Integer = 60
+    Private Const MinCellSize As Integer = 30
 
+    Private CellSize As Integer = 60
+
+    Private StartX As Integer = 20
+    Private StartY As Integer = 20
+
+    Private RightPanelX As Integer = 940
+    Private RightPanelWidth As Integer = 300
+
+    Private ActiveRackStartX As Integer = 980
+    Private ActiveRackStartY As Integer = 230
+    Private ActiveRackStepY As Integer = 70
+
+    Private OpponentRackStartX As Integer = 1120
+    Private OpponentRackStartY As Integer = 230
+    Private OpponentRackStepY As Integer = 70
+    Private RackColumns As Integer = 1
+    Private RackRows As Integer = 7
+    Private RackStepX As Integer = 0
     Private dragTile As TileInstance = Nothing
     Private dragOffsetX As Integer
     Private dragOffsetY As Integer
@@ -77,11 +92,22 @@ Public Class Form1
     Private currentGameBestWord As String = ""
     Private currentGameBestWordScore As Integer = 0
     Private currentGameBestWordPlayer As String = ""
-
+    Private player2IsComputer As Boolean = False
     Private currentGameBestMoveScore As Integer = 0
     Private currentGameBestMovePlayer As String = ""
-
     Private btnStats As New Button()
+
+    Private Const ComputerMinWordLength As Integer = 3
+
+    Private Const ComputerCandidateLimit As Integer = 5000
+    Private Const ComputerMaxWordsInMove As Integer = 10
+    Private Const ComputerSecondWordPool As Integer = 120
+    Private Const ComputerMaxWordLength As Integer = 7
+
+    Private Const ComputerMaxSinglePlacements As Integer = 700
+    Private Const ComputerPairCombinationPool As Integer = 45
+    Private Const ComputerTripleCombinationPool As Integer = 18
+    Private Const ComputerMaxPlacesPerMove As Integer = 4
     Private Sub Form1_Load(sender As Object,
                            e As EventArgs) _
                            Handles MyBase.Load
@@ -94,19 +120,20 @@ Public Class Form1
 
         Me.StartPosition = FormStartPosition.Manual
 
-        Me.Bounds = New Rectangle(
-    workArea.Left,
-    workArea.Top,
-    Math.Min(1260, workArea.Width),
-    Math.Min(1040, workArea.Height))
+        Me.MinimumSize = New Size(820, 650)
 
-        Me.MinimumSize = New Size(1260, 1000)
+        Me.Bounds =
+    New Rectangle(
+        workArea.Left,
+        workArea.Top,
+        Math.Min(1260, workArea.Width),
+        Math.Min(920, workArea.Height))
 
         Me.DoubleBuffered = True
         Me.AutoScroll = False
-       Me.Controls.Add(btnRackMode)
-Me.Controls.Add(btnNewGame)
-Me.Controls.Add(btnStats)
+        Me.Controls.Add(btnRackMode)
+        Me.Controls.Add(btnNewGame)
+        Me.Controls.Add(btnStats)
         AddHandler btnRackMode.Click,
     AddressOf btnRackMode_Click
 
@@ -115,6 +142,17 @@ Me.Controls.Add(btnStats)
 
         AddHandler btnNewGame.Click,
     AddressOf btnNewGame_Click
+        lblAiThinking.Text = "ИИ думает..."
+        lblAiThinking.Visible = False
+        lblAiThinking.TextAlign = ContentAlignment.MiddleCenter
+        lblAiThinking.BorderStyle = BorderStyle.FixedSingle
+        lblAiThinking.BackColor = Color.FromArgb(255, 245, 180)
+        lblAiThinking.ForeColor = Color.Black
+        lblAiThinking.Font = New Font("Arial", 10, FontStyle.Bold)
+
+        Me.Controls.Add(lblAiThinking)
+        RemoveDuplicateButtons()
+        lblAiThinking.BringToFront()
         SetupButtons()
 
         Me.DoubleBuffered = True
@@ -133,12 +171,33 @@ Me.Controls.Add(btnStats)
         btnCancelMove.ForeColor = Color.White
         btnCancelMove.Font = New Font("Arial", 9, FontStyle.Bold)
         Me.Text = "Эрудит"
-        Me.Width = 820
-        Me.Height = 700
 
-        DictionaryManager.LoadDictionary("russian.txt")
+
+        DictionaryManager.LoadDictionary(
+    Path.Combine(
+        Application.StartupPath,
+        "russian.txt"))
+
+        DictionaryManager.LoadAiDictionary(
+    Path.Combine(
+        Application.StartupPath,
+        "ai_words.txt"))
+
+
         StartNewGame()
 
+        UpdateAdaptiveLayout()
+        UpdateButtonsLayout()
+        UpdateAiThinkingLabelLayout()
+
+        btnRackMode.BringToFront()
+        btnStats.BringToFront()
+        btnNewGame.BringToFront()
+        btnConfirmMove.BringToFront()
+        btnCancelMove.BringToFront()
+
+        Me.Invalidate()
+        Me.Refresh()
     End Sub
 
 
@@ -212,7 +271,12 @@ Me.Controls.Add(btnStats)
         sender As Object,
         e As MouseEventArgs) _
         Handles Me.MouseDown
+        If currentPlayer IsNot Nothing AndAlso
+   currentPlayer.IsComputer Then
 
+            Exit Sub
+
+        End If
         For i = tileInstances.Count - 1 To 0 Step -1
 
             Dim t As TileInstance = tileInstances(i)
@@ -379,6 +443,12 @@ Me.Controls.Add(btnStats)
     sender As Object,
     e As EventArgs) _
     Handles btnConfirmMove.Click
+        If currentPlayer IsNot Nothing AndAlso
+   currentPlayer.IsComputer Then
+
+            Exit Sub
+
+        End If
         If gameOver Then
             Exit Sub
         End If
@@ -610,7 +680,7 @@ Me.Controls.Add(btnStats)
 
 
         LoadCurrentPlayerRack()
-
+        UpdateAdaptiveLayout()
         UpdatePlayersInfo()
 
         Me.Text =
@@ -620,6 +690,13 @@ Me.Controls.Add(btnStats)
         currentPlayer.Score.ToString()
 
         Me.Invalidate()
+        If currentPlayer.IsComputer AndAlso Not gameOver Then
+
+            Me.BeginInvoke(
+                New MethodInvoker(
+                    AddressOf MakeComputerMove))
+
+        End If
 
     End Sub
     Private Sub LoadCurrentPlayerRack()
@@ -781,8 +858,7 @@ Me.Controls.Add(btnStats)
 
         ExchangeAllCurrentPlayerLetters()
 
-        MessageBox.Show(
-            "Буквы заменены. Ход переходит следующему игроку.")
+
 
         NextPlayer()
 
@@ -967,31 +1043,57 @@ Me.Controls.Add(btnStats)
             normalFont,
             textBrush,
             ActiveRackStartX,
-            200)
+            190)
 
             g.DrawString(
             "Соперник:",
             normalFont,
             textBrush,
             OpponentRackStartX - 10,
-            200)
+            190)
 
-            ' Общая рамка
-            g.DrawRectangle(
-            Pens.LightGray,
-            RightPanelX + 15,
-            225,
-            260,
-            540)
 
-            ' Вертикальный разделитель
-            g.DrawLine(
-            Pens.LightGray,
-            RightPanelX + 145,
-            225,
-            RightPanelX + 145,
-            750)
 
+            Dim rackFrameY As Integer =
+    ActiveRackStartY - 20
+
+            Dim rackTileHeight As Integer
+
+            If RackColumns = 2 Then
+                rackTileHeight = 42
+            Else
+                rackTileHeight = Math.Min(CellSize, 60)
+            End If
+
+            Dim rackFrameHeight As Integer =
+    (RackRows - 1) * ActiveRackStepY + rackTileHeight + 28
+
+            If RackColumns = 2 Then
+                rackTileHeight = 42
+            Else
+                rackTileHeight = Math.Min(CellSize, 60)
+            End If
+
+
+
+            Using p As New Pen(Color.White)
+                g.DrawRectangle(
+        p,
+        RightPanelX,
+        rackFrameY,
+        RightPanelWidth,
+        rackFrameHeight)
+            End Using
+            Using p As New Pen(Color.White)
+
+                g.DrawLine(
+        p,
+        RightPanelX + RightPanelWidth \ 2,
+        rackFrameY,
+        RightPanelX + RightPanelWidth \ 2,
+        rackFrameY + rackFrameHeight)
+
+            End Using
             Dim otherPlayer As Player = Nothing
 
             For Each p As Player In players
@@ -1023,17 +1125,23 @@ Me.Controls.Add(btnStats)
     startX As Integer,
     startY As Integer)
 
-        Dim y As Integer = startY
+        If player Is Nothing Then
+            Exit Sub
+        End If
 
-        For Each tile As Tile In player.Rack
+        For i = 0 To player.Rack.Count - 1
+
+            Dim col As Integer =
+            i Mod RackColumns
+
+            Dim row As Integer =
+            i \ RackColumns
 
             DrawSmallTile(
             g,
-            tile,
-            startX,
-            y)
-
-            y += OpponentRackStepY
+            player.Rack(i),
+            startX + col * RackStepX,
+            startY + row * OpponentRackStepY)
 
         Next
 
@@ -1057,31 +1165,105 @@ Me.Controls.Add(btnStats)
     g As Graphics,
     t As TileInstance)
 
-        Dim letterFont As New Font(
+        If t Is Nothing OrElse t.Tile Is Nothing Then
+            Exit Sub
+        End If
+
+        Dim letter As String =
+        t.VisibleLetter
+
+        If letter = "" Then
+            Exit Sub
+        End If
+
+        Dim x As Integer =
+        StartX + t.BoardX * CellSize
+
+        Dim y As Integer =
+        StartY + t.BoardY * CellSize
+
+
+        Dim letterFontSize As Integer =
+        CInt(CellSize * 0.55)
+
+        If letterFontSize < 14 Then
+            letterFontSize = 14
+        End If
+
+        If letterFontSize > 34 Then
+            letterFontSize = 34
+        End If
+
+
+        Dim valueFontSize As Integer =
+        CInt(CellSize * 0.15)
+
+        If valueFontSize < 6 Then
+            valueFontSize = 6
+        End If
+
+        If valueFontSize > 9 Then
+            valueFontSize = 9
+        End If
+
+
+        Using letterFont As New Font(
         "Times New Roman",
-        30,
+        letterFontSize,
         FontStyle.Bold)
 
-        Dim scoreFont As New Font(
-        "Arial",
-        8,
-        FontStyle.Regular)
+            Using valueFont As New Font(
+            "Arial",
+            valueFontSize,
+            FontStyle.Bold)
 
-        Using letterBrush As New SolidBrush(Color.Black)
+                Using letterBrush As New SolidBrush(Color.Black)
 
-            g.DrawString(
-            t.VisibleLetter,
-            letterFont,
-            letterBrush,
-            t.ScreenX + 8,
-            t.ScreenY + 4)
+                    Dim letterRect As New RectangleF(
+                    x,
+                    y + CellSize * 0.08F,
+                    CellSize,
+                    CellSize * 0.75F)
 
-            g.DrawString(
-            t.Tile.Value.ToString(),
-            scoreFont,
-            letterBrush,
-            t.ScreenX + 42,
-            t.ScreenY + 42)
+                    Using sf As New StringFormat()
+
+                        sf.Alignment = StringAlignment.Center
+                        sf.LineAlignment = StringAlignment.Center
+
+                        g.DrawString(
+                        letter,
+                        letterFont,
+                        letterBrush,
+                        letterRect,
+                        sf)
+
+                    End Using
+
+
+                    Dim valueText As String =
+                    t.Tile.Value.ToString()
+
+                    Dim valueSize As SizeF =
+                    g.MeasureString(
+                        valueText,
+                        valueFont)
+
+                    Dim valueX As Single =
+                    x + CellSize - valueSize.Width - CellSize * 0.12F
+
+                    Dim valueY As Single =
+                    y + CellSize - valueSize.Height - CellSize * 0.08F
+
+                    g.DrawString(
+                    valueText,
+                    valueFont,
+                    letterBrush,
+                    valueX,
+                    valueY)
+
+                End Using
+
+            End Using
 
         End Using
 
@@ -1106,49 +1288,143 @@ Me.Controls.Add(btnStats)
     x As Integer,
     y As Integer)
 
-        Dim letterFont As New Font(
+        If letter Is Nothing OrElse letter = "" Then
+            Exit Sub
+        End If
+
+
+        Dim letterFontSize As Integer
+
+        If RackColumns = 2 Then
+            letterFontSize = 24
+        Else
+            letterFontSize = CInt(CellSize * 0.58)
+        End If
+
+        If letterFontSize < 20 Then
+            letterFontSize = 20
+        End If
+
+        If letterFontSize > 34 Then
+            letterFontSize = 34
+        End If
+
+
+        Dim valueFontSize As Integer
+
+        If RackColumns = 2 Then
+            valueFontSize = 7
+        Else
+            valueFontSize = CInt(CellSize * 0.15)
+        End If
+
+        If valueFontSize < 6 Then
+            valueFontSize = 6
+        End If
+
+        If valueFontSize > 9 Then
+            valueFontSize = 9
+        End If
+
+
+        Dim drawSize As Integer =
+        Math.Min(CellSize, 60)
+
+        If RackColumns = 2 Then
+            drawSize = 42
+        End If
+
+
+        Using letterFont As New Font(
         "Times New Roman",
-        31,
+        letterFontSize,
         FontStyle.Bold)
 
-        Dim scoreFont As New Font(
-        "Arial",
-        8,
-        FontStyle.Regular)
+            Using valueFont As New Font(
+            "Arial",
+            valueFontSize,
+            FontStyle.Bold)
 
-        Using shadowBrush As New SolidBrush(RackLetterShadowColor)
+                Using shadowBrush As New SolidBrush(RackLetterShadowColor)
+                    Using letterBrush As New SolidBrush(RackLetterColor)
 
-            g.DrawString(
-            letter,
-            letterFont,
-            shadowBrush,
-            x + 2,
-            y + 2)
+                        Dim letterRect As New RectangleF(
+                    x - 4,
+                    y,
+                    drawSize + 8,
+                    drawSize * 0.82F)
 
-            g.DrawString(
-            value.ToString(),
-            scoreFont,
-            shadowBrush,
-            x + 38,
-            y + 40)
+                        Using sf As New StringFormat()
 
-        End Using
+                            sf.Alignment = StringAlignment.Center
+                            sf.LineAlignment = StringAlignment.Center
 
-        Using letterBrush As New SolidBrush(RackLetterColor)
+                            Dim shadowOffset As Integer = 1
 
-            g.DrawString(
-            letter,
-            letterFont,
-            letterBrush,
-            x,
-            y)
+                            If CellSize < 45 OrElse RackColumns = 2 Then
+                                shadowOffset = 0
+                            End If
 
-            g.DrawString(
-            value.ToString(),
-            scoreFont,
-            letterBrush,
-            x + 36,
-            y + 38)
+                            If shadowOffset > 0 Then
+
+                                Dim shadowRect As RectangleF =
+        letterRect
+
+                                shadowRect.Offset(
+        shadowOffset,
+        shadowOffset)
+
+                                g.DrawString(
+        letter,
+        letterFont,
+        shadowBrush,
+        shadowRect,
+        sf)
+
+                            End If
+
+                            g.DrawString(
+    letter,
+    letterFont,
+    letterBrush,
+    letterRect,
+    sf)
+
+                        End Using
+
+
+                        Dim valueText As String =
+                    value.ToString()
+
+                        Dim valueSize As SizeF =
+                    g.MeasureString(
+                        valueText,
+                        valueFont)
+
+                        Dim valueX As Single =
+                    x + drawSize - valueSize.Width - 4
+
+                        Dim valueY As Single =
+                    y + drawSize - valueSize.Height - 4
+
+                        g.DrawString(
+                    valueText,
+                    valueFont,
+                    shadowBrush,
+                    valueX + 1,
+                    valueY + 1)
+
+                        g.DrawString(
+                    valueText,
+                    valueFont,
+                    letterBrush,
+                    valueX,
+                    valueY)
+
+                    End Using
+                End Using
+
+            End Using
 
         End Using
 
@@ -1257,10 +1533,10 @@ Me.Controls.Add(btnStats)
     End Sub
     Private Sub Form1_Resize(
     sender As Object,
-    e As EventArgs) _
-    Handles MyBase.Resize
+    e As EventArgs
+) Handles MyBase.Resize
 
-        SetupButtons()
+        UpdateAdaptiveLayout()
         Me.Invalidate()
 
     End Sub
@@ -1427,7 +1703,8 @@ Me.Controls.Add(btnStats)
         Using dlg As New NewGameDialog(
         player1Name,
         player2Name,
-        targetScore)
+        targetScore,
+        player2IsComputer)
 
             If dlg.ShowDialog(Me) <> DialogResult.OK Then
                 Exit Sub
@@ -1436,6 +1713,7 @@ Me.Controls.Add(btnStats)
             player1Name = dlg.Player1Name
             player2Name = dlg.Player2Name
             targetScore = dlg.TargetScore
+            player2IsComputer = dlg.Player2IsComputer
 
         End Using
 
@@ -1464,10 +1742,12 @@ Me.Controls.Add(btnStats)
         Dim p1 As New Player()
         p1.Name = player1Name
         p1.Score = 0
+        p1.IsComputer = False
 
         Dim p2 As New Player()
         p2.Name = player2Name
         p2.Score = 0
+        p2.IsComputer = player2IsComputer
 
         players.Add(p1)
         players.Add(p2)
@@ -1495,7 +1775,7 @@ Me.Controls.Add(btnStats)
             players(0)
 
         LoadCurrentPlayerRack()
-
+        UpdateAdaptiveLayout()
         btnConfirmMove.Enabled = True
         btnCancelMove.Enabled = True
         btnNewGame.Enabled = True
@@ -1510,6 +1790,16 @@ Me.Controls.Add(btnStats)
             currentPlayer.Name
 
         SetupButtons()
+
+        UpdateAdaptiveLayout()
+        UpdateButtonsLayout()
+        UpdateAiThinkingLabelLayout()
+
+        btnRackMode.BringToFront()
+        btnStats.BringToFront()
+        btnNewGame.BringToFront()
+        btnConfirmMove.BringToFront()
+        btnCancelMove.BringToFront()
 
         Me.Invalidate()
 
@@ -1632,6 +1922,2100 @@ Me.Controls.Add(btnStats)
                 currentPlayer.Name
 
         End If
+
+    End Sub
+
+
+    Private Function FindFreeHorizontalSlot(
+        length As Integer
+    ) As Point
+
+        For y = 0 To Board.Size - 1
+
+            For x = 0 To Board.Size - length
+
+                If IsHorizontalSlotFree(x, y, length) Then
+                    Return New Point(x, y)
+                End If
+
+            Next
+
+        Next
+
+        Return New Point(-1, -1)
+
+    End Function
+
+
+    Private Function IsHorizontalSlotFree(
+        startBoardX As Integer,
+        boardY As Integer,
+        length As Integer
+    ) As Boolean
+
+        If IsTileAt(startBoardX - 1, boardY) Then
+            Return False
+        End If
+
+        If IsTileAt(startBoardX + length, boardY) Then
+            Return False
+        End If
+
+        For i = 0 To length - 1
+
+            Dim x As Integer =
+                startBoardX + i
+
+            If IsTileAt(x, boardY) Then
+                Return False
+            End If
+
+            If IsTileAt(x, boardY - 1) Then
+                Return False
+            End If
+
+            If IsTileAt(x, boardY + 1) Then
+                Return False
+            End If
+
+        Next
+
+        Return True
+
+    End Function
+
+
+    Private Function IsTileAt(
+        boardX As Integer,
+        boardY As Integer
+    ) As Boolean
+
+        If boardX < 0 OrElse
+           boardY < 0 OrElse
+           boardX >= Board.Size OrElse
+           boardY >= Board.Size Then
+
+            Return False
+
+        End If
+
+        For Each t As TileInstance In tileInstances
+
+            If t.BoardX = boardX AndAlso
+               t.BoardY = boardY Then
+
+                Return True
+
+            End If
+
+        Next
+
+        Return False
+
+    End Function
+
+    Private Class ComputerMove
+
+        Public Property Placements As List(Of ComputerPlacement)
+        Public Property Score As Integer
+        Public Property WordsCount As Integer
+        Public Property TilesUsedCount As Integer
+        Public Property IsCrossMove As Boolean = False
+
+        Public Sub New()
+            Placements = New List(Of ComputerPlacement)
+        End Sub
+
+    End Class
+
+
+    Private Class ComputerPlacement
+
+        Public Property Word As String
+        Public Property BoardX As Integer
+        Public Property BoardY As Integer
+        Public Property Horizontal As Boolean
+
+        Public Property PlacedTiles As List(Of TileInstance)
+        Public Property UsedRackTiles As List(Of Tile)
+
+        Public Sub New()
+            PlacedTiles = New List(Of TileInstance)
+            UsedRackTiles = New List(Of Tile)
+        End Sub
+
+    End Class
+
+
+    Private Sub MakeComputerMove()
+
+        If gameOver Then Exit Sub
+        If currentPlayer Is Nothing Then Exit Sub
+        If Not currentPlayer.IsComputer Then Exit Sub
+
+        Dim move As ComputerMove = Nothing
+
+        BeginAiThinkingIndicator()
+
+        Try
+
+            move =
+        FindBestComputerMove()
+
+        Finally
+
+            EndAiThinkingIndicator()
+
+        End Try
+        If move Is Nothing Then
+
+            ExchangeAllCurrentPlayerLetters()
+
+            MessageBox.Show(
+                currentPlayer.Name &
+                " не нашёл хода и меняет буквы.",
+                "Ход компьютера",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information)
+
+            NextPlayer()
+            Exit Sub
+
+        End If
+
+
+        Dim placedTiles As List(Of TileInstance) =
+            PlaceComputerMove(move)
+
+        If placedTiles.Count = 0 Then
+
+            ExchangeAllCurrentPlayerLetters()
+            NextPlayer()
+            Exit Sub
+
+        End If
+
+
+        Dim wordTileLists =
+            WordBuilder.BuildWordTiles(tileInstances)
+
+        Dim words As New List(Of String)
+        Dim wordScores As New List(Of Integer)
+
+        For Each wordTiles As List(Of TileInstance) In wordTileLists
+
+            Dim w As String =
+                GetWordText(wordTiles)
+
+            If Not DictionaryManager.IsGoodAiWord(w) Then
+
+                CancelComputerPlacedTiles(placedTiles)
+
+                ExchangeAllCurrentPlayerLetters()
+                NextPlayer()
+                Exit Sub
+
+            End If
+
+            Dim score As Integer =
+                ScoreManager.CalculateWordScore(
+                    wordTiles,
+                    gameBoard)
+
+            words.Add(w)
+            wordScores.Add(score)
+
+        Next
+
+
+        Dim baseScore As Integer = 0
+
+        For Each s As Integer In wordScores
+            baseScore += s
+        Next
+
+        Dim bonusScore As Integer = 0
+
+        If placedTiles.Count = 7 Then
+            bonusScore = AllTilesBonus
+        End If
+
+        Dim totalScore As Integer =
+            baseScore + bonusScore
+
+
+        For Each t As TileInstance In placedTiles
+
+            gameBoard.GetCell(
+                t.BoardX,
+                t.BoardY).Tile = t.Tile
+
+            t.Confirmed = True
+            t.HomeX = t.ScreenX
+            t.HomeY = t.ScreenY
+
+            currentPlayer.Rack.Remove(t.Tile)
+
+        Next
+
+
+        RefillCurrentPlayerRack()
+
+        UpdateCurrentGameRecords(
+            words,
+            wordScores,
+            totalScore)
+
+        currentPlayer.Score += totalScore
+
+        UpdatePlayersInfo()
+
+        MessageBox.Show(
+            currentPlayer.Name &
+            " составил: " &
+            String.Join(", ", words) &
+            Environment.NewLine &
+            "Очки за ход: " &
+            totalScore.ToString(),
+            "Ход компьютера",
+            MessageBoxButtons.OK,
+            MessageBoxIcon.Information)
+
+        If CheckGameOver() Then
+            Exit Sub
+        End If
+
+        NextPlayer()
+
+    End Sub
+
+
+    Private Function FindBestComputerMove() As ComputerMove
+
+        Dim singlePlacements As List(Of ComputerPlacement) =
+        FindSingleComputerPlacements()
+
+        If singlePlacements.Count = 0 Then
+            Return Nothing
+        End If
+
+
+        Dim bestMove As ComputerMove = Nothing
+        Dim singleMoves As New List(Of ComputerMove)
+
+
+        For Each placement As ComputerPlacement In singlePlacements
+
+            Dim singleMove As ComputerMove =
+        BuildComputerMoveFromPlacements(
+            New List(Of ComputerPlacement) From {
+                placement
+            })
+
+            If singleMove IsNot Nothing Then
+
+                singleMoves.Add(singleMove)
+
+                If IsBetterComputerMove(singleMove, bestMove) Then
+                    bestMove = singleMove
+                End If
+
+            End If
+
+
+            Dim secondPlacement As ComputerPlacement =
+        TryFindCrossPlacementForBase(placement)
+
+            If secondPlacement IsNot Nothing Then
+
+                Dim crossMove As ComputerMove =
+            BuildComputerMoveFromPlacements(
+                New List(Of ComputerPlacement) From {
+                    placement,
+                    secondPlacement
+                })
+
+                If crossMove IsNot Nothing Then
+
+                    crossMove.IsCrossMove = True
+
+                    If IsBetterComputerMove(crossMove, bestMove) Then
+                        bestMove = crossMove
+                    End If
+
+                End If
+
+            End If
+
+        Next
+
+
+        singleMoves.Sort(
+        Function(a As ComputerMove, b As ComputerMove)
+
+            Return GetComputerMovePriority(b).
+                CompareTo(GetComputerMovePriority(a))
+
+        End Function)
+
+
+        Dim pairPool As New List(Of ComputerPlacement)
+
+        For i = 0 To Math.Min(
+        ComputerPairCombinationPool,
+        singleMoves.Count) - 1
+
+            pairPool.Add(singleMoves(i).Placements(0))
+
+        Next
+
+
+        For i = 0 To pairPool.Count - 2
+
+            For j = i + 1 To pairPool.Count - 1
+
+                Dim move As ComputerMove =
+                BuildComputerMoveFromPlacements(
+                    New List(Of ComputerPlacement) From {
+                        pairPool(i),
+                        pairPool(j)
+                    })
+
+                If move IsNot Nothing Then
+
+                    If IsBetterComputerMove(move, bestMove) Then
+                        bestMove = move
+                    End If
+
+                End If
+
+            Next
+
+        Next
+
+
+        If ComputerMaxPlacesPerMove >= 3 Then
+
+            Dim triplePoolCount As Integer =
+            Math.Min(
+                ComputerTripleCombinationPool,
+                pairPool.Count)
+
+            For i = 0 To triplePoolCount - 3
+
+                For j = i + 1 To triplePoolCount - 2
+
+                    For k = j + 1 To triplePoolCount - 1
+
+                        Dim move As ComputerMove =
+                        BuildComputerMoveFromPlacements(
+                            New List(Of ComputerPlacement) From {
+                                pairPool(i),
+                                pairPool(j),
+                                pairPool(k)
+                            })
+
+                        If move IsNot Nothing Then
+
+                            If IsBetterComputerMove(move, bestMove) Then
+                                bestMove = move
+                            End If
+
+                        End If
+
+                    Next
+
+                Next
+
+            Next
+
+        End If
+
+
+        Return bestMove
+
+    End Function
+    'Private Function TryEvaluateComputerMove(
+    '    word As String,
+    '    startBoardX As Integer,
+    '    startBoardY As Integer,
+    '    horizontal As Boolean
+    ') As ComputerMove
+
+    '    If Not WordFitsOnBoard(
+    '        word,
+    '        startBoardX,
+    '        startBoardY,
+    '        horizontal) Then
+
+    '        Return Nothing
+
+    '    End If
+
+
+    '    If HasTileBeforeOrAfterWord(
+    '        word,
+    '        startBoardX,
+    '        startBoardY,
+    '        horizontal) Then
+
+    '        Return Nothing
+
+    '    End If
+
+
+    '    Dim usedRackTiles As New List(Of Tile)
+    '    Dim placedTiles As New List(Of TileInstance)
+
+    '    Dim touchesExistingTile As Boolean = False
+
+
+    '    For i = 0 To word.Length - 1
+
+    '        Dim boardX As Integer =
+    '            startBoardX
+
+    '        Dim boardY As Integer =
+    '            startBoardY
+
+    '        If horizontal Then
+    '            boardX += i
+    '        Else
+    '            boardY += i
+    '        End If
+
+
+    '        Dim existingTile As TileInstance =
+    '            GetTileAt(boardX, boardY)
+
+    '        Dim neededLetter As Char =
+    '            word(i)
+
+    '        If existingTile IsNot Nothing Then
+
+    '            If existingTile.VisibleLetter <> neededLetter.ToString() Then
+    '                Return Nothing
+    '            End If
+
+    '            touchesExistingTile = True
+
+    '        Else
+
+    '            Dim rackTile As Tile =
+    '                FindRackTileForLetter(
+    '                    neededLetter,
+    '                    usedRackTiles)
+
+    '            Dim jokerLetter As String = ""
+
+    '            If rackTile Is Nothing Then
+
+    '                rackTile =
+    '                    FindRackJoker(usedRackTiles)
+
+    '                If rackTile IsNot Nothing Then
+    '                    jokerLetter = neededLetter.ToString()
+    '                End If
+
+    '            End If
+
+    '            If rackTile Is Nothing Then
+    '                Return Nothing
+    '            End If
+
+    '            usedRackTiles.Add(rackTile)
+
+    '            Dim screenX As Integer =
+    '                StartX + boardX * CellSize
+
+    '            Dim screenY As Integer =
+    '                StartY + boardY * CellSize
+
+    '            placedTiles.Add(
+    '                New TileInstance With {
+    '                    .Tile = rackTile,
+    '                    .ScreenX = screenX,
+    '                    .ScreenY = screenY,
+    '                    .HomeX = screenX,
+    '                    .HomeY = screenY,
+    '                    .BoardX = boardX,
+    '                    .BoardY = boardY,
+    '                    .Confirmed = False,
+    '                    .JokerLetter = jokerLetter
+    '                })
+
+    '        End If
+
+    '    Next
+
+
+    '    If Not touchesExistingTile Then
+    '        Return Nothing
+    '    End If
+
+    '    If placedTiles.Count = 0 Then
+    '        Return Nothing
+    '    End If
+
+
+    '    For Each t As TileInstance In placedTiles
+    '        tileInstances.Add(t)
+    '    Next
+
+
+    '    Dim result As ComputerMove = Nothing
+
+    '    Try
+
+    '        If Not MoveValidator.ValidateMove(tileInstances) Then
+    '            Return Nothing
+    '        End If
+
+
+    '        Dim wordTileLists =
+    '            WordBuilder.BuildWordTiles(tileInstances)
+
+    '        If wordTileLists.Count = 0 Then
+    '            Return Nothing
+    '        End If
+    '        If wordTileLists.Count > ComputerMaxWordsInMove Then
+    '            Return Nothing
+    '        End If
+
+    '        Dim totalScore As Integer = 0
+
+    '        For Each wordTiles As List(Of TileInstance) In wordTileLists
+
+    '            Dim builtWord As String =
+    '                GetWordText(wordTiles)
+    '            If builtWord.Length < ComputerMinWordLength Then
+    '                Return Nothing
+    '            End If
+    '            If Not DictionaryManager.IsGoodAiWord(builtWord) Then
+    '                Return Nothing
+    '            End If
+
+    '            totalScore +=
+    '                ScoreManager.CalculateWordScore(
+    '                    wordTiles,
+    '                    gameBoard)
+
+    '        Next
+
+
+    '        If placedTiles.Count = 7 Then
+    '            totalScore += AllTilesBonus
+    '        End If
+
+
+    '        result =
+    '            New ComputerMove With {
+    '                .Word = word,
+    '                .BoardX = startBoardX,
+    '                .BoardY = startBoardY,
+    '                .Horizontal = horizontal,
+    '                .Score = totalScore
+    '            }
+
+    '    Finally
+
+    '        For Each t As TileInstance In placedTiles
+    '            tileInstances.Remove(t)
+    '        Next
+
+    '    End Try
+
+    '    Return result
+
+    'End Function
+
+
+    Private Function PlaceComputerMove(
+    move As ComputerMove
+) As List(Of TileInstance)
+
+        Dim placed As New List(Of TileInstance)
+
+        If move Is Nothing Then
+            Return placed
+        End If
+
+        If move.Placements Is Nothing Then
+            Return placed
+        End If
+
+        For Each placement As ComputerPlacement In move.Placements
+
+            For Each t As TileInstance In placement.PlacedTiles
+
+                tileInstances.Add(t)
+                placed.Add(t)
+
+            Next
+
+        Next
+
+        Me.Invalidate()
+
+        Return placed
+
+    End Function
+    Private Function WordFitsOnBoard(
+        word As String,
+        startBoardX As Integer,
+        startBoardY As Integer,
+        horizontal As Boolean
+    ) As Boolean
+
+        If startBoardX < 0 OrElse
+           startBoardY < 0 Then
+
+            Return False
+
+        End If
+
+        If horizontal Then
+
+            If startBoardX + word.Length > Board.Size Then
+                Return False
+            End If
+
+            If startBoardY >= Board.Size Then
+                Return False
+            End If
+
+        Else
+
+            If startBoardY + word.Length > Board.Size Then
+                Return False
+            End If
+
+            If startBoardX >= Board.Size Then
+                Return False
+            End If
+
+        End If
+
+        Return True
+
+    End Function
+
+
+    Private Function HasTileBeforeOrAfterWord(
+        word As String,
+        startBoardX As Integer,
+        startBoardY As Integer,
+        horizontal As Boolean
+    ) As Boolean
+
+        Dim beforeX As Integer =
+            startBoardX
+
+        Dim beforeY As Integer =
+            startBoardY
+
+        Dim afterX As Integer =
+            startBoardX
+
+        Dim afterY As Integer =
+            startBoardY
+
+        If horizontal Then
+
+            beforeX -= 1
+            afterX += word.Length
+
+        Else
+
+            beforeY -= 1
+            afterY += word.Length
+
+        End If
+
+        If GetTileAt(beforeX, beforeY) IsNot Nothing Then
+            Return True
+        End If
+
+        If GetTileAt(afterX, afterY) IsNot Nothing Then
+            Return True
+        End If
+
+        Return False
+
+    End Function
+
+
+    Private Function GetTileAt(
+        boardX As Integer,
+        boardY As Integer
+    ) As TileInstance
+
+        If boardX < 0 OrElse
+           boardY < 0 OrElse
+           boardX >= Board.Size OrElse
+           boardY >= Board.Size Then
+
+            Return Nothing
+
+        End If
+
+        For Each t As TileInstance In tileInstances
+
+            If t.BoardX = boardX AndAlso
+               t.BoardY = boardY Then
+
+                Return t
+
+            End If
+
+        Next
+
+        Return Nothing
+
+    End Function
+
+
+    Private Function FindRackTileForLetter(
+        letter As Char,
+        usedTiles As List(Of Tile)
+    ) As Tile
+
+        For Each tile As Tile In currentPlayer.Rack
+
+            If usedTiles.Contains(tile) Then
+                Continue For
+            End If
+
+            If tile.Letter = letter Then
+                Return tile
+            End If
+
+        Next
+
+        Return Nothing
+
+    End Function
+
+
+    Private Function FindRackJoker(
+        usedTiles As List(Of Tile)
+    ) As Tile
+
+        For Each tile As Tile In currentPlayer.Rack
+
+            If usedTiles.Contains(tile) Then
+                Continue For
+            End If
+
+            If tile.Letter = "*"c Then
+                Return tile
+            End If
+
+        Next
+
+        Return Nothing
+
+    End Function
+
+
+    Private Sub CancelComputerPlacedTiles(
+        placedTiles As List(Of TileInstance))
+
+        For Each t As TileInstance In placedTiles
+
+            If tileInstances.Contains(t) Then
+                tileInstances.Remove(t)
+            End If
+
+        Next
+
+        Me.Invalidate()
+
+    End Sub
+
+
+    Private Function IsComputerAllowedWord(
+        word As String
+    ) As Boolean
+
+        Dim alphabet As String =
+            "АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ"
+
+        For Each ch As Char In word
+
+            If Not alphabet.Contains(ch.ToString()) Then
+                Return False
+            End If
+
+        Next
+
+        Return True
+
+    End Function
+    Private Function GetBoardAnchorLetters() As String
+
+        Dim result As String = ""
+
+        For Each t As TileInstance In tileInstances
+
+            If t.Confirmed AndAlso
+               t.BoardX <> -1 AndAlso
+               t.BoardY <> -1 Then
+
+                Dim letter As String =
+                    t.VisibleLetter
+
+                If letter <> "" AndAlso
+                   letter <> "*" AndAlso
+                   Not result.Contains(letter) Then
+
+                    result &= letter
+
+                End If
+
+            End If
+
+        Next
+
+        Return result
+
+    End Function
+    Private Function FindSingleComputerPlacements() _
+    As List(Of ComputerPlacement)
+
+        Dim result As New List(Of ComputerPlacement)
+
+        Dim candidateWords As List(Of String) =
+            SimpleAi.BuildCandidateWords(
+                currentPlayer.Rack,
+                GetBoardAnchorLetters(),
+                ComputerMaxWordLength,
+                ComputerCandidateLimit)
+
+        For Each word As String In candidateWords
+
+            If word.Length < ComputerMinWordLength Then
+                Continue For
+            End If
+
+            If word.Length > ComputerMaxWordLength Then
+                Continue For
+            End If
+
+            If Not IsComputerAllowedWord(word) Then
+                Continue For
+            End If
+
+
+            For y = 0 To Board.Size - 1
+
+                For x = 0 To Board.Size - 1
+
+                    Dim horizontalPlacement As ComputerPlacement =
+                        TryBuildComputerPlacement(
+                            word,
+                            x,
+                            y,
+                            True)
+
+                    If horizontalPlacement IsNot Nothing Then
+
+                        result.Add(horizontalPlacement)
+
+                        If result.Count >= ComputerMaxSinglePlacements Then
+                            Return result
+                        End If
+
+                    End If
+
+
+                    Dim verticalPlacement As ComputerPlacement =
+                        TryBuildComputerPlacement(
+                            word,
+                            x,
+                            y,
+                            False)
+
+                    If verticalPlacement IsNot Nothing Then
+
+                        result.Add(verticalPlacement)
+
+                        If result.Count >= ComputerMaxSinglePlacements Then
+                            Return result
+                        End If
+
+                    End If
+
+                Next
+
+            Next
+
+        Next
+
+        Return result
+
+    End Function
+
+
+    Private Function TryBuildComputerPlacement(
+        word As String,
+        startBoardX As Integer,
+        startBoardY As Integer,
+        horizontal As Boolean
+    ) As ComputerPlacement
+
+        If Not WordFitsOnBoard(
+            word,
+            startBoardX,
+            startBoardY,
+            horizontal) Then
+
+            Return Nothing
+
+        End If
+
+
+        If HasTileBeforeOrAfterWord(
+            word,
+            startBoardX,
+            startBoardY,
+            horizontal) Then
+
+            Return Nothing
+
+        End If
+
+
+        Dim placement As New ComputerPlacement()
+        placement.Word = word
+        placement.BoardX = startBoardX
+        placement.BoardY = startBoardY
+        placement.Horizontal = horizontal
+
+        Dim touchesExistingTile As Boolean = False
+
+
+        For i = 0 To word.Length - 1
+
+            Dim boardX As Integer =
+                startBoardX
+
+            Dim boardY As Integer =
+                startBoardY
+
+            If horizontal Then
+                boardX += i
+            Else
+                boardY += i
+            End If
+
+
+            Dim existingTile As TileInstance =
+                GetTileAt(boardX, boardY)
+
+            Dim neededLetter As Char =
+                word(i)
+
+            If existingTile IsNot Nothing Then
+
+                If existingTile.VisibleLetter.ToUpper() <>
+                   neededLetter.ToString() Then
+
+                    Return Nothing
+
+                End If
+
+                touchesExistingTile = True
+
+            Else
+
+                Dim rackTile As Tile =
+                    FindRackTileForLetter(
+                        neededLetter,
+                        placement.UsedRackTiles)
+
+                Dim jokerLetter As String = ""
+
+                If rackTile Is Nothing Then
+
+                    rackTile =
+                        FindRackJoker(
+                            placement.UsedRackTiles)
+
+                    If rackTile IsNot Nothing Then
+                        jokerLetter = neededLetter.ToString()
+                    End If
+
+                End If
+
+                If rackTile Is Nothing Then
+                    Return Nothing
+                End If
+
+                placement.UsedRackTiles.Add(rackTile)
+
+                Dim screenX As Integer =
+                    StartX + boardX * CellSize
+
+                Dim screenY As Integer =
+                    StartY + boardY * CellSize
+
+                placement.PlacedTiles.Add(
+                    New TileInstance With {
+                        .Tile = rackTile,
+                        .ScreenX = screenX,
+                        .ScreenY = screenY,
+                        .HomeX = screenX,
+                        .HomeY = screenY,
+                        .BoardX = boardX,
+                        .BoardY = boardY,
+                        .Confirmed = False,
+                        .JokerLetter = jokerLetter
+                    })
+
+            End If
+
+        Next
+
+
+        If Not touchesExistingTile Then
+            Return Nothing
+        End If
+
+        If placement.PlacedTiles.Count = 0 Then
+            Return Nothing
+        End If
+
+        Return placement
+
+    End Function
+
+
+    Private Function BuildComputerMoveFromPlacements(
+    placements As List(Of ComputerPlacement)
+) As ComputerMove
+
+        If placements Is Nothing OrElse
+       placements.Count = 0 Then
+
+            Return Nothing
+
+        End If
+
+
+        For i = 0 To placements.Count - 2
+
+            For j = i + 1 To placements.Count - 1
+
+                If Not ArePlacementsCompatible(
+                placements(i),
+                placements(j)) Then
+
+                    Return Nothing
+
+                End If
+
+            Next
+
+        Next
+
+
+        Dim newTiles As New List(Of TileInstance)
+
+        For Each placement As ComputerPlacement In placements
+
+            If placement Is Nothing Then
+                Return Nothing
+            End If
+
+            For Each t As TileInstance In placement.PlacedTiles
+
+                newTiles.Add(t)
+
+            Next
+
+        Next
+
+
+        If newTiles.Count = 0 Then
+            Return Nothing
+        End If
+
+
+        Dim testTiles As New List(Of TileInstance)
+
+        For Each t As TileInstance In tileInstances
+            testTiles.Add(t)
+        Next
+
+        For Each t As TileInstance In newTiles
+            testTiles.Add(t)
+        Next
+
+
+        Dim wordTileLists As List(Of List(Of TileInstance)) =
+        WordBuilder.BuildWordTiles(testTiles)
+
+        If wordTileLists.Count = 0 Then
+            Return Nothing
+        End If
+
+
+        Dim totalScore As Integer = 0
+
+        For Each wordTiles As List(Of TileInstance) In wordTileLists
+
+            Dim builtWord As String =
+            GetWordText(wordTiles)
+
+            If builtWord.Length < ComputerMinWordLength Then
+                Return Nothing
+            End If
+
+            If Not DictionaryManager.IsGoodAiWord(builtWord) Then
+                Return Nothing
+            End If
+
+            totalScore +=
+            ScoreManager.CalculateWordScore(
+                wordTiles,
+                gameBoard)
+
+        Next
+
+
+        If newTiles.Count = 7 Then
+            totalScore += AllTilesBonus
+        End If
+
+
+        Dim result As New ComputerMove()
+
+        result.Score = totalScore
+        result.WordsCount = wordTileLists.Count
+        result.TilesUsedCount = newTiles.Count
+
+        For Each placement As ComputerPlacement In placements
+            result.Placements.Add(placement)
+        Next
+
+        Return result
+
+    End Function
+    Private Function ArePlacementsCompatible(
+        a As ComputerPlacement,
+        b As ComputerPlacement
+    ) As Boolean
+
+        For Each tileA As Tile In a.UsedRackTiles
+
+            For Each tileB As Tile In b.UsedRackTiles
+
+                If tileA Is tileB Then
+                    Return False
+                End If
+
+            Next
+
+        Next
+
+
+        For Each placedA As TileInstance In a.PlacedTiles
+
+            For Each placedB As TileInstance In b.PlacedTiles
+
+                If placedA.BoardX = placedB.BoardX AndAlso
+                   placedA.BoardY = placedB.BoardY Then
+
+                    Return False
+
+                End If
+
+            Next
+
+        Next
+
+        Return True
+
+    End Function
+
+
+    Private Function IsBetterComputerMove(
+        candidate As ComputerMove,
+        currentBest As ComputerMove
+    ) As Boolean
+
+        If candidate Is Nothing Then
+            Return False
+        End If
+
+        If currentBest Is Nothing Then
+            Return True
+        End If
+
+        Return GetComputerMovePriority(candidate) >
+            GetComputerMovePriority(currentBest)
+
+    End Function
+
+
+    Private Function GetComputerMovePriority(
+    move As ComputerMove
+) As Integer
+
+        If move Is Nothing Then
+            Return -1
+        End If
+
+        Dim priority As Integer =
+        move.Score * 10
+
+        priority += move.TilesUsedCount * 8
+
+        If move.TilesUsedCount = 7 Then
+            priority += 180
+        End If
+
+        If move.IsCrossMove Then
+            priority += 60
+        End If
+
+        priority += Math.Max(0, move.WordsCount - 1) * 20
+
+        If Not move.IsCrossMove Then
+            priority += Math.Max(0, move.Placements.Count - 1) * 10
+        End If
+
+        Return priority
+
+    End Function
+    Private Sub UpdateAdaptiveLayout()
+
+        Dim margin As Integer = 20
+        Dim gap As Integer = 20
+        Dim panelWidth As Integer = 280
+
+        Dim clientW As Integer = Me.ClientSize.Width
+        Dim clientH As Integer = Me.ClientSize.Height
+
+        If clientW <= 0 OrElse clientH <= 0 Then
+            Exit Sub
+        End If
+
+
+        Dim availableBoardWidth As Integer =
+        clientW - margin - gap - panelWidth - margin
+
+        Dim availableBoardHeight As Integer =
+        clientH - margin - margin
+
+        Dim sizeByWidth As Integer =
+        availableBoardWidth \ Board.Size
+
+        Dim sizeByHeight As Integer =
+        availableBoardHeight \ Board.Size
+
+        CellSize =
+        Math.Min(
+            MaxCellSize,
+            Math.Min(
+                sizeByWidth,
+                sizeByHeight))
+
+        If CellSize < MinCellSize Then
+            CellSize = MinCellSize
+        End If
+
+
+        StartX = margin
+        StartY = margin
+
+        RightPanelX =
+    StartX + Board.Size * CellSize + gap
+
+        RightPanelWidth = panelWidth
+
+
+        Dim rackFrameX As Integer =
+    RightPanelX + 15
+
+        Dim rackFrameWidth As Integer =
+    RightPanelWidth - 30
+
+        ActiveRackStartY =
+    StartY + 185
+
+        OpponentRackStartY =
+    ActiveRackStartY
+
+        Dim normalRackHeight As Integer =
+    7 * Math.Max(CellSize + 8, 42)
+
+        Dim boardBottom As Integer =
+    StartY + Board.Size * CellSize
+
+        Dim spaceForRackAndButtons As Integer =
+    boardBottom - ActiveRackStartY - 160
+
+        If spaceForRackAndButtons < normalRackHeight Then
+
+            RackColumns = 2
+            RackRows = 4
+            RackStepX = 48
+
+            ActiveRackStepY = 42
+            OpponentRackStepY = 42
+
+        Else
+
+            RackColumns = 1
+            RackRows = 7
+            RackStepX = 0
+
+            ActiveRackStepY =
+        Math.Max(
+            CellSize + 8,
+            42)
+
+            OpponentRackStepY =
+        ActiveRackStepY
+
+        End If
+
+        ActiveRackStartX =
+    rackFrameX + 25
+
+        OpponentRackStartX =
+    rackFrameX + rackFrameWidth \ 2 + 25
+        Dim desiredWidth As Integer =
+    RightPanelX + RightPanelWidth + margin
+
+        If Me.WindowState = FormWindowState.Normal Then
+
+            Me.ClientSize =
+        New Size(
+            desiredWidth,
+            StartY + Board.Size * CellSize + margin)
+
+        End If
+
+        UpdateButtonsLayout()
+        RepositionAllTiles()
+
+        UpdateAiThinkingLabelLayout()
+    End Sub
+    Private Sub UpdateButtonsLayout()
+
+        If btnConfirmMove Is Nothing Then
+            Exit Sub
+        End If
+
+        Dim buttonX As Integer =
+        RightPanelX + 15
+
+        Dim buttonW As Integer =
+        RightPanelWidth - 30
+
+        Dim rackFrameY As Integer =
+        ActiveRackStartY - 20
+
+        Dim rackTileHeight As Integer
+
+        If RackColumns = 2 Then
+            rackTileHeight = 42
+        Else
+            rackTileHeight = Math.Min(CellSize, 60)
+        End If
+
+        Dim rackFrameHeight As Integer =
+        (RackRows - 1) * ActiveRackStepY + rackTileHeight + 28
+
+        Dim buttonY As Integer =
+        rackFrameY + rackFrameHeight + 12
+
+
+        btnRackMode.Location =
+        New Point(buttonX, buttonY)
+
+        btnRackMode.Size =
+        New Size(buttonW, 26)
+
+
+        btnStats.Location =
+        New Point(buttonX, buttonY + 34)
+
+        btnStats.Size =
+        New Size(buttonW, 26)
+
+
+        btnNewGame.Location =
+        New Point(buttonX, buttonY + 68)
+
+        btnNewGame.Size =
+        New Size(buttonW, 26)
+
+
+        btnConfirmMove.Location =
+        New Point(buttonX, buttonY + 104)
+
+        btnConfirmMove.Size =
+        New Size(buttonW \ 2 - 5, 30)
+
+
+        btnCancelMove.Location =
+        New Point(buttonX + buttonW \ 2 + 5, buttonY + 104)
+
+        btnCancelMove.Size =
+        New Size(buttonW \ 2 - 5, 30)
+
+    End Sub
+    Private Sub RepositionAllTiles()
+
+        If tileInstances Is Nothing Then
+            Exit Sub
+        End If
+
+        For Each t As TileInstance In tileInstances
+
+            If t.BoardX <> -1 AndAlso
+           t.BoardY <> -1 Then
+
+                t.ScreenX =
+                StartX + t.BoardX * CellSize
+
+                t.ScreenY =
+                StartY + t.BoardY * CellSize
+
+                t.HomeX = t.ScreenX
+                t.HomeY = t.ScreenY
+
+            End If
+
+        Next
+
+        If currentPlayer Is Nothing Then
+            Exit Sub
+        End If
+
+        Dim rackIndex As Integer = 0
+
+        For Each tile As Tile In currentPlayer.Rack
+
+            Dim t As TileInstance =
+            FindRackTileInstance(tile)
+
+            If t IsNot Nothing Then
+
+                Dim col As Integer =
+                rackIndex Mod RackColumns
+
+                Dim row As Integer =
+                rackIndex \ RackColumns
+
+                t.ScreenX =
+                ActiveRackStartX + col * RackStepX
+
+                t.ScreenY =
+                ActiveRackStartY + row * ActiveRackStepY
+
+                t.HomeX = t.ScreenX
+                t.HomeY = t.ScreenY
+
+            End If
+
+            rackIndex += 1
+
+        Next
+
+    End Sub
+
+
+    Private Function FindRackTileInstance(
+        tile As Tile
+    ) As TileInstance
+
+        For Each t As TileInstance In tileInstances
+
+            If t.Tile Is tile AndAlso
+               Not t.Confirmed AndAlso
+               t.BoardX = -1 AndAlso
+               t.BoardY = -1 Then
+
+                Return t
+
+            End If
+
+        Next
+
+        Return Nothing
+
+    End Function
+    Private Function TryFindCrossPlacementForBase(
+    basePlacement As ComputerPlacement
+) As ComputerPlacement
+
+        If basePlacement Is Nothing Then
+            Return Nothing
+        End If
+
+        If basePlacement.PlacedTiles.Count = 0 Then
+            Return Nothing
+        End If
+
+
+        AddPlacementTilesToBoard(basePlacement)
+
+        Dim bestSecond As ComputerPlacement = Nothing
+        Dim bestMove As ComputerMove = Nothing
+
+        Try
+
+            Dim remainingRack As List(Of Tile) =
+                GetRemainingRackForAi(basePlacement.UsedRackTiles)
+
+            Dim anchorLetters As String =
+                GetBoardAnchorLetters() &
+                GetPlacementLetters(basePlacement)
+
+            Dim candidateWords As List(Of String) =
+                SimpleAi.BuildCandidateWords(
+                    remainingRack,
+                    anchorLetters,
+                    ComputerMaxWordLength,
+                    ComputerSecondWordPool)
+
+
+            For Each word As String In candidateWords
+
+                If word.Length < ComputerMinWordLength Then
+                    Continue For
+                End If
+
+                If word.Length > ComputerMaxWordLength Then
+                    Continue For
+                End If
+
+                If Not DictionaryManager.IsGoodAiWord(word) Then
+                    Continue For
+                End If
+
+
+                For Each crossTile As TileInstance In basePlacement.PlacedTiles
+
+                    Dim crossLetter As String =
+                        crossTile.VisibleLetter
+
+                    If crossLetter = "" Then
+                        Continue For
+                    End If
+
+
+                    For letterIndex = 0 To word.Length - 1
+
+                        If word(letterIndex).ToString() <> crossLetter Then
+                            Continue For
+                        End If
+
+                        Dim startX As Integer
+                        Dim startY As Integer
+
+                        If basePlacement.Horizontal Then
+
+                            startX = crossTile.BoardX
+                            startY = crossTile.BoardY - letterIndex
+
+                        Else
+
+                            startX = crossTile.BoardX - letterIndex
+                            startY = crossTile.BoardY
+
+                        End If
+
+
+                        Dim secondPlacement As ComputerPlacement =
+                            TryBuildComputerPlacementWithBlockedTiles(
+                                word,
+                                startX,
+                                startY,
+                                Not basePlacement.Horizontal,
+                                basePlacement.UsedRackTiles)
+
+                        If secondPlacement Is Nothing Then
+                            Continue For
+                        End If
+
+
+                        RemovePlacementTilesFromBoard(basePlacement)
+
+                        Dim testMove As ComputerMove =
+                            BuildComputerMoveFromPlacements(
+                                New List(Of ComputerPlacement) From {
+                                    basePlacement,
+                                    secondPlacement
+                                })
+
+                        AddPlacementTilesToBoard(basePlacement)
+
+
+                        If testMove Is Nothing Then
+                            Continue For
+                        End If
+
+                        If IsBetterComputerMove(testMove, bestMove) Then
+
+                            bestMove = testMove
+                            bestSecond = secondPlacement
+
+                        End If
+
+                    Next
+
+                Next
+
+            Next
+
+        Finally
+
+            RemovePlacementTilesFromBoard(basePlacement)
+
+        End Try
+
+        Return bestSecond
+
+    End Function
+    Private Function GetPlacementLetters(
+    placement As ComputerPlacement
+) As String
+
+        Dim result As String = ""
+
+        If placement Is Nothing Then
+            Return result
+        End If
+
+        For Each t As TileInstance In placement.PlacedTiles
+
+            Dim letter As String =
+                t.VisibleLetter
+
+            If letter <> "" AndAlso
+               Not result.Contains(letter) Then
+
+                result &= letter
+
+            End If
+
+        Next
+
+        Return result
+
+    End Function
+
+
+    Private Function GetRemainingRackForAi(
+        usedTiles As List(Of Tile)
+    ) As List(Of Tile)
+
+        Dim result As New List(Of Tile)
+
+        For Each tile As Tile In currentPlayer.Rack
+
+            If usedTiles IsNot Nothing AndAlso
+               usedTiles.Contains(tile) Then
+
+                Continue For
+
+            End If
+
+            result.Add(tile)
+
+        Next
+
+        Return result
+
+    End Function
+
+
+    Private Sub AddPlacementTilesToBoard(
+        placement As ComputerPlacement)
+
+        If placement Is Nothing Then
+            Exit Sub
+        End If
+
+        For Each t As TileInstance In placement.PlacedTiles
+
+            If Not tileInstances.Contains(t) Then
+                tileInstances.Add(t)
+            End If
+
+        Next
+
+    End Sub
+
+
+    Private Sub RemovePlacementTilesFromBoard(
+        placement As ComputerPlacement)
+
+        If placement Is Nothing Then
+            Exit Sub
+        End If
+
+        For Each t As TileInstance In placement.PlacedTiles
+
+            While tileInstances.Contains(t)
+                tileInstances.Remove(t)
+            End While
+
+        Next
+
+    End Sub
+    Private Function TryBuildComputerPlacementWithBlockedTiles(
+    word As String,
+    startBoardX As Integer,
+    startBoardY As Integer,
+    horizontal As Boolean,
+    blockedTiles As List(Of Tile)
+) As ComputerPlacement
+
+        If Not WordFitsOnBoard(
+            word,
+            startBoardX,
+            startBoardY,
+            horizontal) Then
+
+            Return Nothing
+
+        End If
+
+        If HasTileBeforeOrAfterWord(
+            word,
+            startBoardX,
+            startBoardY,
+            horizontal) Then
+
+            Return Nothing
+
+        End If
+
+
+        Dim placement As New ComputerPlacement()
+
+        placement.Word = word
+        placement.BoardX = startBoardX
+        placement.BoardY = startBoardY
+        placement.Horizontal = horizontal
+
+        Dim touchesAnyTile As Boolean = False
+
+
+        For i = 0 To word.Length - 1
+
+            Dim boardX As Integer =
+                startBoardX
+
+            Dim boardY As Integer =
+                startBoardY
+
+            If horizontal Then
+                boardX += i
+            Else
+                boardY += i
+            End If
+
+
+            Dim existingTile As TileInstance =
+                GetTileAt(boardX, boardY)
+
+            Dim neededLetter As Char =
+                word(i)
+
+            If existingTile IsNot Nothing Then
+
+                If existingTile.VisibleLetter.ToUpper() <>
+                   neededLetter.ToString() Then
+
+                    Return Nothing
+
+                End If
+
+                touchesAnyTile = True
+
+            Else
+
+                Dim rackTile As Tile =
+                    FindRackTileForLetterBlocked(
+                        neededLetter,
+                        placement.UsedRackTiles,
+                        blockedTiles)
+
+                Dim jokerLetter As String = ""
+
+                If rackTile Is Nothing Then
+
+                    rackTile =
+                        FindRackJokerBlocked(
+                            placement.UsedRackTiles,
+                            blockedTiles)
+
+                    If rackTile IsNot Nothing Then
+                        jokerLetter = neededLetter.ToString()
+                    End If
+
+                End If
+
+                If rackTile Is Nothing Then
+                    Return Nothing
+                End If
+
+                placement.UsedRackTiles.Add(rackTile)
+
+                Dim screenX As Integer =
+                    StartX + boardX * CellSize
+
+                Dim screenY As Integer =
+                    StartY + boardY * CellSize
+
+                placement.PlacedTiles.Add(
+                    New TileInstance With {
+                        .Tile = rackTile,
+                        .ScreenX = screenX,
+                        .ScreenY = screenY,
+                        .HomeX = screenX,
+                        .HomeY = screenY,
+                        .BoardX = boardX,
+                        .BoardY = boardY,
+                        .Confirmed = False,
+                        .JokerLetter = jokerLetter
+                    })
+
+            End If
+
+        Next
+
+
+        If Not touchesAnyTile Then
+            Return Nothing
+        End If
+
+        If placement.PlacedTiles.Count = 0 Then
+            Return Nothing
+        End If
+
+        Return placement
+
+    End Function
+    Private Function FindRackTileForLetterBlocked(
+    letter As Char,
+    usedTiles As List(Of Tile),
+    blockedTiles As List(Of Tile)
+) As Tile
+
+        For Each tile As Tile In currentPlayer.Rack
+
+            If usedTiles IsNot Nothing AndAlso
+               usedTiles.Contains(tile) Then
+
+                Continue For
+
+            End If
+
+            If blockedTiles IsNot Nothing AndAlso
+               blockedTiles.Contains(tile) Then
+
+                Continue For
+
+            End If
+
+            If tile.Letter = letter Then
+                Return tile
+            End If
+
+        Next
+
+        Return Nothing
+
+    End Function
+
+
+    Private Function FindRackJokerBlocked(
+        usedTiles As List(Of Tile),
+        blockedTiles As List(Of Tile)
+    ) As Tile
+
+        For Each tile As Tile In currentPlayer.Rack
+
+            If usedTiles IsNot Nothing AndAlso
+               usedTiles.Contains(tile) Then
+
+                Continue For
+
+            End If
+
+            If blockedTiles IsNot Nothing AndAlso
+               blockedTiles.Contains(tile) Then
+
+                Continue For
+
+            End If
+
+            If tile.Letter = "*"c Then
+                Return tile
+            End If
+
+        Next
+
+        Return Nothing
+
+    End Function
+    Private Sub UpdateAiThinkingLabelLayout()
+
+        If lblAiThinking Is Nothing Then
+            Exit Sub
+        End If
+
+        lblAiThinking.Location =
+            New Point(
+                RightPanelX + 15,
+                StartY + 145)
+
+        lblAiThinking.Size =
+            New Size(
+                RightPanelWidth - 30,
+                28)
+
+        lblAiThinking.BringToFront()
+
+    End Sub
+    Private Sub BeginAiThinkingIndicator()
+
+        aiThinkingWatch =
+            Stopwatch.StartNew()
+
+        aiThinkingShown = False
+
+        If lblAiThinking IsNot Nothing Then
+            lblAiThinking.Visible = False
+        End If
+
+        Me.Cursor = Cursors.WaitCursor
+
+    End Sub
+
+
+    Private Sub MaybeShowAiThinkingIndicator()
+
+        If aiThinkingWatch Is Nothing Then
+            Exit Sub
+        End If
+
+        If aiThinkingShown Then
+            Exit Sub
+        End If
+
+        If aiThinkingWatch.ElapsedMilliseconds < AiThinkingDelayMs Then
+            Exit Sub
+        End If
+
+        aiThinkingShown = True
+
+        UpdateAiThinkingLabelLayout()
+
+        lblAiThinking.Visible = True
+        lblAiThinking.BringToFront()
+
+        Me.Refresh()
+        Application.DoEvents()
+
+    End Sub
+
+
+    Private Sub EndAiThinkingIndicator()
+
+        If aiThinkingWatch IsNot Nothing Then
+            aiThinkingWatch.Stop()
+        End If
+
+        aiThinkingWatch = Nothing
+        aiThinkingShown = False
+
+        If lblAiThinking IsNot Nothing Then
+            lblAiThinking.Visible = False
+        End If
+
+        Me.Cursor = Cursors.Default
+
+    End Sub
+    Private Function GetTileHitRect(
+    t As TileInstance
+) As Rectangle
+
+        Dim drawSize As Integer =
+            Math.Min(CellSize, 60)
+
+        If RackColumns = 2 AndAlso
+           t.BoardX = -1 AndAlso
+           t.BoardY = -1 Then
+
+            drawSize = 42
+
+        End If
+
+
+        Dim padding As Integer
+
+        If RackColumns = 2 Then
+            padding = 12
+        ElseIf CellSize < 45 Then
+            padding = 10
+        Else
+            padding = 8
+        End If
+
+
+        Return New Rectangle(
+            t.ScreenX - padding,
+            t.ScreenY - padding,
+            drawSize + padding * 2,
+            drawSize + padding * 2)
+
+    End Function
+    Private Sub RemoveDuplicateButtons()
+
+        Dim keep As New List(Of Button) From {
+            btnRackMode,
+            btnStats,
+            btnNewGame,
+            btnConfirmMove,
+            btnCancelMove
+        }
+
+        For i = Me.Controls.Count - 1 To 0 Step -1
+
+            Dim b As Button =
+                TryCast(Me.Controls(i), Button)
+
+            If b Is Nothing Then
+                Continue For
+            End If
+
+            If keep.Contains(b) Then
+                Continue For
+            End If
+
+            If b.Text = "Режим: классический" OrElse
+               b.Text.StartsWith("Режим:") OrElse
+               b.Text = "Статистика" OrElse
+               b.Text = "Новая игра" OrElse
+               b.Text = "Готово" OrElse
+               b.Text = "Отмена" Then
+
+                Me.Controls.Remove(b)
+                b.Dispose()
+
+            End If
+
+        Next
 
     End Sub
 End Class

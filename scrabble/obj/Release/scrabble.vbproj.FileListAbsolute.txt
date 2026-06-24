@@ -1,0 +1,14 @@
+D:\web\scrabble\scrable-vb\scrabble\bin\Release\ai_words.txt
+D:\web\scrabble\scrable-vb\scrabble\bin\Release\russian.txt
+D:\web\scrabble\scrable-vb\scrabble\bin\Release\scrabble.exe.config
+D:\web\scrabble\scrable-vb\scrabble\bin\Release\scrabble.exe
+D:\web\scrabble\scrable-vb\scrabble\bin\Release\scrabble.pdb
+D:\web\scrabble\scrable-vb\scrabble\bin\Release\scrabble.xml
+D:\web\scrabble\scrable-vb\scrabble\obj\Release\scrabble.vbproj.AssemblyReference.cache
+D:\web\scrabble\scrable-vb\scrabble\obj\Release\scrabble.Form1.resources
+D:\web\scrabble\scrable-vb\scrabble\obj\Release\scrabble.Resources.resources
+D:\web\scrabble\scrable-vb\scrabble\obj\Release\scrabble.vbproj.GenerateResource.cache
+D:\web\scrabble\scrable-vb\scrabble\obj\Release\scrabble.vbproj.CoreCompileInputs.cache
+D:\web\scrabble\scrable-vb\scrabble\obj\Release\scrabble.exe
+D:\web\scrabble\scrable-vb\scrabble\obj\Release\scrabble.xml
+D:\web\scrabble\scrable-vb\scrabble\obj\Release\scrabble.pdb

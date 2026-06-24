@@ -11,9 +11,10 @@
     <AssemblyName>scrabble</AssemblyName>
     <FileAlignment>512</FileAlignment>
     <MyType>WindowsForms</MyType>
-    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -77,6 +78,7 @@
     <Compile Include="Board\BoardWordBuilder.vb" />
     <Compile Include="Board\BonusType.vb" />
     <Compile Include="Board\Cell.vb" />
+    <Compile Include="Board\SimpleAi.vb" />
     <Compile Include="Dictionary\DictionaryManager.vb" />
     <Compile Include="Form1.vb">
       <SubType>Form</SubType>
@@ -103,6 +105,7 @@
     <Compile Include="My Project\Application.Designer.vb">
       <AutoGen>True</AutoGen>
       <DependentUpon>Application.myapp</DependentUpon>
+      <DesignTime>True</DesignTime>
     </Compile>
     <Compile Include="My Project\Resources.Designer.vb">
       <AutoGen>True</AutoGen>
@@ -145,6 +148,9 @@
     <Folder Include="Storage\" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="ai_words.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="dictionary.txt" />
     <Content Include="russian.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
