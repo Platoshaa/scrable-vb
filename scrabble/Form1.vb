@@ -18,7 +18,6 @@ Public Class Form1
 
     Private player1Name As String = "Мама"
     Private player2Name As String = "Папа"
-    Private Const AiThinkingDelayMs As Integer = 2000
 
     Private lblAiThinking As New Label()
 
@@ -108,6 +107,13 @@ Public Class Form1
     Private Const ComputerPairCombinationPool As Integer = 45
     Private Const ComputerTripleCombinationPool As Integer = 18
     Private Const ComputerMaxPlacesPerMove As Integer = 4
+    Private Const ComputerThinkLimitMs As Integer = 5000
+    Private Const ComputerUiPulseMs As Integer = 100
+    Private isComputerThinking As Boolean = False
+    Private computerSearchWatch As Stopwatch = Nothing
+    Private computerNextUiPulseMs As Long = 0
+    Private computerDebugMoves As New List(Of ComputerMove)
+    Private Const ComputerDebugMoveLimit As Integer = 10
     Private Sub Form1_Load(sender As Object,
                            e As EventArgs) _
                            Handles MyBase.Load
@@ -182,6 +188,7 @@ Public Class Form1
     Path.Combine(
         Application.StartupPath,
         "ai_words.txt"))
+
 
 
         StartNewGame()
@@ -268,48 +275,130 @@ Public Class Form1
 
 
     Private Sub Form1_MouseDown(
-        sender As Object,
-        e As MouseEventArgs) _
-        Handles Me.MouseDown
+    sender As Object,
+    e As MouseEventArgs) _
+    Handles Me.MouseDown
+
+        If isComputerThinking Then
+            Exit Sub
+        End If
+
         If currentPlayer IsNot Nothing AndAlso
-   currentPlayer.IsComputer Then
+       currentPlayer.IsComputer Then
 
             Exit Sub
 
         End If
+
+
+        Dim t As TileInstance =
+        FindDraggableTileAt(e.Location)
+
+        If t Is Nothing Then
+            Exit Sub
+        End If
+
+
+        dragTile = t
+
+        dragOffsetX =
+        e.X - t.ScreenX
+
+        dragOffsetY =
+        e.Y - t.ScreenY
+
+    End Sub
+    Private Function FindDraggableTileAt(
+    mousePoint As Point
+) As TileInstance
+
+        Dim bestTile As TileInstance = Nothing
+        Dim bestDistance As Integer = Integer.MaxValue
+
         For i = tileInstances.Count - 1 To 0 Step -1
 
-            Dim t As TileInstance = tileInstances(i)
+            Dim t As TileInstance =
+            tileInstances(i)
 
-            ' Уже подтвержденные буквы на поле двигать нельзя
+            If t Is Nothing Then
+                Continue For
+            End If
+
+            ' Уже подтвержденные буквы двигать нельзя
             If t.Confirmed Then
                 Continue For
             End If
 
-            Dim r As New Rectangle(
-                t.ScreenX,
-                t.ScreenY,
-                32,
-                32)
 
-            If r.Contains(e.Location) Then
+            Dim isRackTile As Boolean =
+            t.BoardX = -1 AndAlso
+            t.BoardY = -1
 
-                dragTile = t
 
-                dragOffsetX =
-                    e.X - t.ScreenX
+            Dim drawSize As Integer
 
-                dragOffsetY =
-                    e.Y - t.ScreenY
+            If isRackTile Then
 
-                Exit For
+                If RackColumns = 2 Then
+                    drawSize = 42
+                Else
+                    drawSize = Math.Min(CellSize, 60)
+                End If
+
+            Else
+
+                drawSize = CellSize
+
+            End If
+
+
+            Dim centerX As Integer =
+            t.ScreenX + drawSize \ 2
+
+            Dim centerY As Integer =
+            t.ScreenY + drawSize \ 2
+
+
+            Dim dx As Integer =
+            mousePoint.X - centerX
+
+            Dim dy As Integer =
+            mousePoint.Y - centerY
+
+            Dim distance As Integer =
+            dx * dx + dy * dy
+
+
+            Dim radius As Integer
+
+            If isRackTile Then
+
+                If RackColumns = 2 Then
+                    radius = 48
+                Else
+                    radius = 58
+                End If
+
+            Else
+
+                radius = Math.Max(30, CellSize \ 2)
+
+            End If
+
+
+            If distance <= radius * radius AndAlso
+           distance < bestDistance Then
+
+                bestDistance = distance
+                bestTile = t
 
             End If
 
         Next
 
-    End Sub
+        Return bestTile
 
+    End Function
 
     Private Sub Form1_MouseMove(
         sender As Object,
@@ -546,55 +635,42 @@ Public Class Form1
         baseScore + bonusScore
 
 
-        Dim confirmMessage As String =
-        "Составленные слова:" &
-        Environment.NewLine &
-        Environment.NewLine
+        Using dlg As New MoveConfirmDialog(
+    currentPlayer.Name,
+    words,
+    wordScores,
+    baseScore,
+    bonusScore,
+    totalScore)
 
-        For i = 0 To words.Count - 1
+            dlg.ShowDialog(Me)
 
-            confirmMessage &= words(i) &
-            " — " &
-            wordScores(i).ToString() &
-            " очков" &
-            Environment.NewLine
+            If dlg.BannedWord <> "" Then
 
-        Next
+                DictionaryManager.AddAiBadWord(
+            dlg.BannedWord)
 
-        confirmMessage &= Environment.NewLine &
-        "Очки за слова: " &
-        baseScore.ToString()
+                MessageBox.Show(
+            "Слово """ &
+            dlg.BannedWord &
+            """ добавлено в запрещённые." &
+            Environment.NewLine &
+            "Ход не засчитан.",
+            "Слово запрещено",
+            MessageBoxButtons.OK,
+            MessageBoxIcon.Information)
 
-        If bonusScore > 0 Then
+                Exit Sub
 
-            confirmMessage &= Environment.NewLine &
-            "Бонус за все 7 букв: +" &
-            bonusScore.ToString()
+            End If
 
-        End If
+            If Not dlg.ConfirmMove Then
+                Exit Sub
+            End If
 
-        confirmMessage &= Environment.NewLine &
-        "Итого за ход: " &
-        totalScore.ToString() &
-        Environment.NewLine &
-        Environment.NewLine &
-        "Завершить ход?"
+        End Using
 
 
-        Dim answer =
-        MessageBox.Show(
-            confirmMessage,
-            "Подтверждение хода",
-            MessageBoxButtons.YesNo,
-            MessageBoxIcon.Question)
-
-        If answer <> DialogResult.Yes Then
-
-            ' Ход не засчитываем.
-            ' Буквы остаются на поле, игрок может подумать дальше.
-            Exit Sub
-
-        End If
 
 
         For Each t As TileInstance In placedTiles
@@ -2053,30 +2129,46 @@ Public Class Form1
         If currentPlayer Is Nothing Then Exit Sub
         If Not currentPlayer.IsComputer Then Exit Sub
 
+
         Dim move As ComputerMove = Nothing
 
         BeginAiThinkingIndicator()
+        BeginComputerSearchLimit()
 
         Try
 
             move =
-        FindBestComputerMove()
+            FindBestComputerMove()
 
         Finally
 
+            EndComputerSearchLimit()
             EndAiThinkingIndicator()
 
         End Try
+        Dim debugText As String =
+    GetComputerMoveDebugText()
+
+        If debugText <> "" Then
+
+            MessageBox.Show(
+        debugText,
+        "Топ ходов ИИ",
+        MessageBoxButtons.OK,
+        MessageBoxIcon.Information)
+
+        End If
+
         If move Is Nothing Then
 
             ExchangeAllCurrentPlayerLetters()
 
             MessageBox.Show(
-                currentPlayer.Name &
-                " не нашёл хода и меняет буквы.",
-                "Ход компьютера",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Information)
+            currentPlayer.Name &
+            " не нашёл хода и меняет буквы.",
+            "Ход компьютера",
+            MessageBoxButtons.OK,
+            MessageBoxIcon.Information)
 
             NextPlayer()
             Exit Sub
@@ -2085,7 +2177,7 @@ Public Class Form1
 
 
         Dim placedTiles As List(Of TileInstance) =
-            PlaceComputerMove(move)
+        PlaceComputerMove(move)
 
         If placedTiles.Count = 0 Then
 
@@ -2097,15 +2189,16 @@ Public Class Form1
 
 
         Dim wordTileLists =
-            WordBuilder.BuildWordTiles(tileInstances)
+        WordBuilder.BuildWordTiles(tileInstances)
 
         Dim words As New List(Of String)
         Dim wordScores As New List(Of Integer)
 
+
         For Each wordTiles As List(Of TileInstance) In wordTileLists
 
             Dim w As String =
-                GetWordText(wordTiles)
+            GetWordText(wordTiles)
 
             If Not DictionaryManager.IsGoodAiWord(w) Then
 
@@ -2118,9 +2211,9 @@ Public Class Form1
             End If
 
             Dim score As Integer =
-                ScoreManager.CalculateWordScore(
-                    wordTiles,
-                    gameBoard)
+            ScoreManager.CalculateWordScore(
+                wordTiles,
+                gameBoard)
 
             words.Add(w)
             wordScores.Add(score)
@@ -2134,21 +2227,79 @@ Public Class Form1
             baseScore += s
         Next
 
+
         Dim bonusScore As Integer = 0
 
         If placedTiles.Count = 7 Then
             bonusScore = AllTilesBonus
         End If
 
+
         Dim totalScore As Integer =
-            baseScore + bonusScore
+        baseScore + bonusScore
+
+
+        ' Окно хода ИИ: можно засчитать, отменить или запретить слово.
+        Using dlg As New MoveConfirmDialog(
+        currentPlayer.Name,
+        words,
+        wordScores,
+        baseScore,
+        bonusScore,
+        totalScore)
+
+            dlg.ShowDialog(Me)
+
+            If dlg.BannedWord <> "" Then
+
+                DictionaryManager.AddAiBadWord(
+                dlg.BannedWord)
+
+                MessageBox.Show(
+                "Слово """ &
+                dlg.BannedWord &
+                """ добавлено в запрещённые." &
+                Environment.NewLine &
+                "ИИ попробует другой ход.",
+                "Слово запрещено",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information)
+
+                CancelComputerPlacedTiles(placedTiles)
+
+                Me.Invalidate()
+
+                Me.BeginInvoke(
+                New MethodInvoker(
+                    AddressOf MakeComputerMove))
+
+                Exit Sub
+
+            End If
+
+
+            If Not dlg.ConfirmMove Then
+
+                CancelComputerPlacedTiles(placedTiles)
+
+                Me.Invalidate()
+
+                Me.BeginInvoke(
+                New MethodInvoker(
+                    AddressOf MakeComputerMove))
+
+                Exit Sub
+
+            End If
+
+        End Using
 
 
         For Each t As TileInstance In placedTiles
 
             gameBoard.GetCell(
-                t.BoardX,
-                t.BoardY).Tile = t.Tile
+            t.BoardX,
+            t.BoardY).Tile = t.Tile
 
             t.Confirmed = True
             t.HomeX = t.ScreenX
@@ -2162,24 +2313,14 @@ Public Class Form1
         RefillCurrentPlayerRack()
 
         UpdateCurrentGameRecords(
-            words,
-            wordScores,
-            totalScore)
+        words,
+        wordScores,
+        totalScore)
 
         currentPlayer.Score += totalScore
 
         UpdatePlayersInfo()
 
-        MessageBox.Show(
-            currentPlayer.Name &
-            " составил: " &
-            String.Join(", ", words) &
-            Environment.NewLine &
-            "Очки за ход: " &
-            totalScore.ToString(),
-            "Ход компьютера",
-            MessageBoxButtons.OK,
-            MessageBoxIcon.Information)
 
         If CheckGameOver() Then
             Exit Sub
@@ -2188,10 +2329,8 @@ Public Class Form1
         NextPlayer()
 
     End Sub
-
-
     Private Function FindBestComputerMove() As ComputerMove
-
+        computerDebugMoves.Clear()
         Dim singlePlacements As List(Of ComputerPlacement) =
         FindSingleComputerPlacements()
 
@@ -2205,7 +2344,9 @@ Public Class Form1
 
 
         For Each placement As ComputerPlacement In singlePlacements
-
+            If ComputerSearchPulse() Then
+                Return bestMove
+            End If
             Dim singleMove As ComputerMove =
         BuildComputerMoveFromPlacements(
             New List(Of ComputerPlacement) From {
@@ -2215,7 +2356,7 @@ Public Class Form1
             If singleMove IsNot Nothing Then
 
                 singleMoves.Add(singleMove)
-
+                RememberComputerDebugMove(singleMove)
                 If IsBetterComputerMove(singleMove, bestMove) Then
                     bestMove = singleMove
                 End If
@@ -2238,7 +2379,7 @@ Public Class Form1
                 If crossMove IsNot Nothing Then
 
                     crossMove.IsCrossMove = True
-
+                    RememberComputerDebugMove(crossMove)
                     If IsBetterComputerMove(crossMove, bestMove) Then
                         bestMove = crossMove
                     End If
@@ -2271,7 +2412,9 @@ Public Class Form1
 
 
         For i = 0 To pairPool.Count - 2
-
+            If ComputerSearchPulse() Then
+                Return bestMove
+            End If
             For j = i + 1 To pairPool.Count - 1
 
                 Dim move As ComputerMove =
@@ -2282,7 +2425,7 @@ Public Class Form1
                     })
 
                 If move IsNot Nothing Then
-
+                    RememberComputerDebugMove(move)
                     If IsBetterComputerMove(move, bestMove) Then
                         bestMove = move
                     End If
@@ -2302,7 +2445,9 @@ Public Class Form1
                 pairPool.Count)
 
             For i = 0 To triplePoolCount - 3
-
+                If ComputerSearchPulse() Then
+                    Return bestMove
+                End If
                 For j = i + 1 To triplePoolCount - 2
 
                     For k = j + 1 To triplePoolCount - 1
@@ -2316,7 +2461,7 @@ Public Class Form1
                             })
 
                         If move IsNot Nothing Then
-
+                            RememberComputerDebugMove(move)
                             If IsBetterComputerMove(move, bestMove) Then
                                 bestMove = move
                             End If
@@ -2793,7 +2938,9 @@ Public Class Form1
                 ComputerCandidateLimit)
 
         For Each word As String In candidateWords
-
+            If ComputerSearchPulse() Then
+                Return result
+            End If
             If word.Length < ComputerMinWordLength Then
                 Continue For
             End If
@@ -2808,9 +2955,13 @@ Public Class Form1
 
 
             For y = 0 To Board.Size - 1
-
+                If ComputerSearchPulse() Then
+                    Return result
+                End If
                 For x = 0 To Board.Size - 1
-
+                    If ComputerSearchPulse() Then
+                        Return result
+                    End If
                     Dim horizontalPlacement As ComputerPlacement =
                         TryBuildComputerPlacement(
                             word,
@@ -3177,14 +3328,14 @@ Public Class Form1
         End If
 
         If move.IsCrossMove Then
-            priority += 60
+            priority += 30
         End If
 
-        priority += Math.Max(0, move.WordsCount - 1) * 20
+        'priority += Math.Max(0, move.WordsCount - 1) * 20
 
-        If Not move.IsCrossMove Then
-            priority += Math.Max(0, move.Placements.Count - 1) * 10
-        End If
+        'If Not move.IsCrossMove Then
+        '    priority += Math.Max(0, move.Placements.Count - 1) * 10
+        'End If
 
         Return priority
 
@@ -3889,43 +4040,65 @@ Public Class Form1
     End Sub
     Private Sub BeginAiThinkingIndicator()
 
-        aiThinkingWatch =
-            Stopwatch.StartNew()
+        isComputerThinking = True
 
-        aiThinkingShown = False
+        aiThinkingWatch =
+        Stopwatch.StartNew()
+
+        aiThinkingShown = True
+
+        SetHumanControlsEnabled(False)
 
         If lblAiThinking IsNot Nothing Then
-            lblAiThinking.Visible = False
+
+            If currentPlayer IsNot Nothing Then
+                lblAiThinking.Text =
+                currentPlayer.Name & " думает..."
+            Else
+                lblAiThinking.Text =
+                "ИИ думает..."
+            End If
+
+            UpdateAiThinkingLabelLayout()
+
+            lblAiThinking.Visible = True
+            lblAiThinking.BringToFront()
+
         End If
 
         Me.Cursor = Cursors.WaitCursor
+
+        Me.Refresh()
+        Application.DoEvents()
 
     End Sub
 
 
     Private Sub MaybeShowAiThinkingIndicator()
 
-        If aiThinkingWatch Is Nothing Then
+        If Not isComputerThinking Then
             Exit Sub
         End If
 
-        If aiThinkingShown Then
+        If lblAiThinking Is Nothing Then
             Exit Sub
         End If
 
-        If aiThinkingWatch.ElapsedMilliseconds < AiThinkingDelayMs Then
-            Exit Sub
+        If currentPlayer IsNot Nothing Then
+            lblAiThinking.Text =
+            currentPlayer.Name & " думает..."
+        Else
+            lblAiThinking.Text =
+            "ИИ думает..."
         End If
-
-        aiThinkingShown = True
 
         UpdateAiThinkingLabelLayout()
 
-        lblAiThinking.Visible = True
-        lblAiThinking.BringToFront()
+        If Not lblAiThinking.Visible Then
+            lblAiThinking.Visible = True
+        End If
 
-        Me.Refresh()
-        Application.DoEvents()
+        lblAiThinking.BringToFront()
 
     End Sub
 
@@ -3938,46 +4111,92 @@ Public Class Form1
 
         aiThinkingWatch = Nothing
         aiThinkingShown = False
+        isComputerThinking = False
 
         If lblAiThinking IsNot Nothing Then
             lblAiThinking.Visible = False
         End If
 
+        SetHumanControlsEnabled(True)
+
         Me.Cursor = Cursors.Default
+
+        Me.Refresh()
+        Application.DoEvents()
 
     End Sub
     Private Function GetTileHitRect(
     t As TileInstance
 ) As Rectangle
 
-        Dim drawSize As Integer =
-            Math.Min(CellSize, 60)
+        If t Is Nothing Then
+            Return Rectangle.Empty
+        End If
 
-        If RackColumns = 2 AndAlso
-           t.BoardX = -1 AndAlso
-           t.BoardY = -1 Then
 
-            drawSize = 42
+        Dim isRackTile As Boolean =
+        t.BoardX = -1 AndAlso
+        t.BoardY = -1
+
+
+        Dim drawSize As Integer
+
+        If isRackTile Then
+
+            If RackColumns = 2 Then
+                drawSize = 42
+            Else
+                drawSize = Math.Min(CellSize, 60)
+            End If
+
+        Else
+
+            drawSize = CellSize
 
         End If
 
 
-        Dim padding As Integer
+        Dim leftPadding As Integer
+        Dim rightPadding As Integer
+        Dim topPadding As Integer
+        Dim bottomPadding As Integer
 
-        If RackColumns = 2 Then
-            padding = 12
-        ElseIf CellSize < 45 Then
-            padding = 10
+        If isRackTile Then
+
+            ' Рука игрока:
+            ' зону специально двигаем вправо.
+            If RackColumns = 2 Then
+
+                leftPadding = 8
+                rightPadding = 34
+                topPadding = 18
+                bottomPadding = 18
+
+            Else
+
+                leftPadding = 30
+                rightPadding = 30
+                topPadding = 18
+                bottomPadding = 18
+
+            End If
+
         Else
-            padding = 8
+
+            ' Неподтверждённая буква на поле.
+            leftPadding = 8
+            rightPadding = 12
+            topPadding = 8
+            bottomPadding = 8
+
         End If
 
 
         Return New Rectangle(
-            t.ScreenX - padding,
-            t.ScreenY - padding,
-            drawSize + padding * 2,
-            drawSize + padding * 2)
+        t.ScreenX - leftPadding,
+        t.ScreenY - topPadding,
+        drawSize + leftPadding + rightPadding,
+        drawSize + topPadding + bottomPadding)
 
     End Function
     Private Sub RemoveDuplicateButtons()
@@ -4018,4 +4237,162 @@ Public Class Form1
         Next
 
     End Sub
+    Private Sub BeginComputerSearchLimit()
+
+        computerSearchWatch =
+            Stopwatch.StartNew()
+
+        computerNextUiPulseMs = 0
+
+    End Sub
+
+
+    Private Sub EndComputerSearchLimit()
+
+        If computerSearchWatch IsNot Nothing Then
+            computerSearchWatch.Stop()
+        End If
+
+        computerSearchWatch = Nothing
+        computerNextUiPulseMs = 0
+
+    End Sub
+
+
+    Private Function ComputerSearchPulse() As Boolean
+
+        If computerSearchWatch Is Nothing Then
+            Return False
+        End If
+
+        Dim elapsed As Long =
+            computerSearchWatch.ElapsedMilliseconds
+
+        If elapsed >= computerNextUiPulseMs Then
+
+            MaybeShowAiThinkingIndicator()
+
+            Application.DoEvents()
+
+            computerNextUiPulseMs =
+                elapsed + ComputerUiPulseMs
+
+        End If
+
+        Return elapsed >= ComputerThinkLimitMs
+
+    End Function
+    Private Sub SetHumanControlsEnabled(
+    enabled As Boolean)
+
+        If btnRackMode IsNot Nothing Then
+            btnRackMode.Enabled = enabled
+        End If
+
+        If btnStats IsNot Nothing Then
+            btnStats.Enabled = enabled
+        End If
+
+        If btnNewGame IsNot Nothing Then
+            btnNewGame.Enabled = enabled
+        End If
+
+        If btnConfirmMove IsNot Nothing Then
+            btnConfirmMove.Enabled = enabled
+        End If
+
+        If btnCancelMove IsNot Nothing Then
+            btnCancelMove.Enabled = enabled
+        End If
+
+    End Sub
+    Private Sub RememberComputerDebugMove(
+    move As ComputerMove)
+
+        If move Is Nothing Then
+            Exit Sub
+        End If
+
+        computerDebugMoves.Add(move)
+
+        computerDebugMoves.Sort(
+            Function(a As ComputerMove, b As ComputerMove)
+
+                Return GetComputerMovePriority(b).
+                    CompareTo(GetComputerMovePriority(a))
+
+            End Function)
+
+        While computerDebugMoves.Count > ComputerDebugMoveLimit
+            computerDebugMoves.RemoveAt(computerDebugMoves.Count - 1)
+        End While
+
+    End Sub
+
+
+    Private Function GetComputerMoveDebugText() As String
+
+        If computerDebugMoves Is Nothing OrElse
+       computerDebugMoves.Count = 0 Then
+
+            Return ""
+
+        End If
+
+        Dim text As String = ""
+
+        For i = 0 To computerDebugMoves.Count - 1
+
+            Dim move As ComputerMove =
+            computerDebugMoves(i)
+
+            text &=
+            (i + 1).ToString() &
+            ". " &
+            GetComputerMoveText(move) &
+            " | очки: " &
+            move.Score.ToString() &
+            " | приоритет: " &
+            GetComputerMovePriority(move).ToString() &
+            " | букв: " &
+            move.TilesUsedCount.ToString() &
+            " | слов: " &
+            move.WordsCount.ToString() &
+            " | крест: " &
+            move.IsCrossMove.ToString() &
+            Environment.NewLine
+
+        Next
+
+        Return text
+
+    End Function
+    Private Function GetComputerMoveText(
+    move As ComputerMove
+) As String
+
+        If move Is Nothing OrElse
+           move.Placements Is Nothing Then
+
+            Return ""
+
+        End If
+
+        Dim words As New List(Of String)
+
+        For Each placement As ComputerPlacement In move.Placements
+
+            If placement IsNot Nothing AndAlso
+               placement.Word IsNot Nothing AndAlso
+               placement.Word <> "" Then
+
+                words.Add(placement.Word)
+
+            End If
+
+        Next
+
+        Return String.Join(", ", words)
+
+    End Function
 End Class

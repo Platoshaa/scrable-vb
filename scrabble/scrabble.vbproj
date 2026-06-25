@@ -99,6 +99,9 @@
     <Compile Include="GameLogic\RackBalancer.vb" />
     <Compile Include="GameLogic\ScoreManager.vb" />
     <Compile Include="GameLogic\TurnManager.vb" />
+    <Compile Include="MoveConfirmDialog.vb">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Players\Player.vb" />
     <Compile Include="Tiles\TileBag.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
@@ -148,6 +151,9 @@
     <Folder Include="Storage\" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="ai_bad_words.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="ai_words.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

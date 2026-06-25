@@ -27,3 +27,5 @@ D:\web\scrabble\scrable-vb\scrabble\obj\Debug\scrabble.xml
 D:\web\scrabble\scrable-vb\scrabble\obj\Debug\scrabble.pdb
 D:\web\scrabble\scrable-vb\scrabble\bin\Debug\ai_words.txt
 D:\web\scrabble\scrable-vb\scrabble\obj\Debug\scrabble.exe.config
+C:\Users\Platosha\source\repos\scrabble\scrabble\bin\Debug\ai_words.txt
+C:\Users\Platosha\source\repos\scrabble\scrabble\bin\Debug\ai_bad_words.txt

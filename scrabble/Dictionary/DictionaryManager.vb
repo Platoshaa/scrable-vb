@@ -6,6 +6,7 @@ Public Class DictionaryManager
     Private Shared words As New HashSet(Of String)
     Private Shared aiWords As New HashSet(Of String)
     Private Shared aiWordsByLength As New Dictionary(Of Integer, List(Of String))
+    Private Shared aiBadWords As New HashSet(Of String)
     Public Shared Sub LoadDictionary(
         filePath As String)
 
@@ -41,20 +42,29 @@ Public Class DictionaryManager
 
         Next
 
-
+        LoadAiBadWords(
+    Path.Combine(
+        Application.StartupPath,
+        "ai_bad_words.txt"))
 
     End Sub
 
 
     Public Shared Function IsValidWord(
-        word As String) As Boolean
+    word As String) As Boolean
 
-        If word Is Nothing Then
+        word =
+        NormalizeAiWord(word)
+
+        If word = "" Then
             Return False
         End If
 
-        Return words.Contains(
-            word.Trim().ToUpper())
+        If aiBadWords.Contains(word) Then
+            Return False
+        End If
+
+        Return words.Contains(word)
 
     End Function
     Public Shared Function GetAllWords() As List(Of String)
@@ -118,20 +128,25 @@ Public Class DictionaryManager
 
             End If
         Next
-
+        LoadAiBadWords(
+    Path.Combine(
+        Application.StartupPath,
+        "ai_bad_words.txt"))
     End Sub
     Public Shared Function IsGoodAiWord(
     word As String
 ) As Boolean
 
-        If word Is Nothing Then
+        word =
+        NormalizeAiWord(word)
+
+        If word = "" Then
             Return False
         End If
 
-        word =
-            word.Trim().
-            ToUpper().
-            Replace("Ё", "Е")
+        If aiBadWords.Contains(word) Then
+            Return False
+        End If
 
         Return aiWords.Contains(word)
 
@@ -147,4 +162,73 @@ Public Class DictionaryManager
         Return New List(Of String)
 
     End Function
+    Public Shared Sub LoadAiBadWords(
+    filePath As String)
+
+        aiBadWords.Clear()
+
+        If Not File.Exists(filePath) Then
+            Exit Sub
+        End If
+
+        Dim enc As Encoding =
+        Encoding.GetEncoding(1251)
+
+        For Each line As String In File.ReadLines(
+        filePath,
+        enc)
+
+            Dim word As String =
+            NormalizeAiWord(line)
+
+            If word <> "" Then
+                aiBadWords.Add(word)
+            End If
+
+        Next
+
+    End Sub
+    Private Shared Function NormalizeAiWord(
+    word As String
+) As String
+
+        If word Is Nothing Then
+            Return ""
+        End If
+
+        Return word.Trim().
+            ToUpper().
+            Replace("Ё", "Е")
+
+    End Function
+    Public Shared Sub AddAiBadWord(
+    word As String)
+
+        word =
+            NormalizeAiWord(word)
+
+        If word = "" Then
+            Exit Sub
+        End If
+
+        If aiBadWords.Contains(word) Then
+            Exit Sub
+        End If
+
+        aiBadWords.Add(word)
+
+        Dim filePath As String =
+            Path.Combine(
+                Application.StartupPath,
+                "ai_bad_words.txt")
+
+        Dim enc As Encoding =
+            Encoding.GetEncoding(1251)
+
+        File.AppendAllText(
+            filePath,
+            word & Environment.NewLine,
+            enc)
+
+    End Sub
 End Class
