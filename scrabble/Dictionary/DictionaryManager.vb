@@ -172,7 +172,7 @@ Public Class DictionaryManager
         End If
 
         Dim enc As Encoding =
-        Encoding.GetEncoding(1251)
+        Encoding.UTF8
 
         For Each line As String In File.ReadLines(
         filePath,
@@ -205,30 +205,108 @@ Public Class DictionaryManager
     word As String)
 
         word =
-            NormalizeAiWord(word)
+        NormalizeAiWord(word)
 
         If word = "" Then
             Exit Sub
         End If
 
-        If aiBadWords.Contains(word) Then
-            Exit Sub
+        If Not aiBadWords.Contains(word) Then
+            aiBadWords.Add(word)
         End If
 
-        aiBadWords.Add(word)
 
         Dim filePath As String =
-            Path.Combine(
-                Application.StartupPath,
-                "ai_bad_words.txt")
+        Path.Combine(
+            Application.StartupPath,
+            "ai_bad_words.txt")
 
         Dim enc As Encoding =
-            Encoding.GetEncoding(1251)
+        Encoding.UTF8
 
-        File.AppendAllText(
-            filePath,
-            word & Environment.NewLine,
-            enc)
+
+        Try
+
+            Dim content As String = ""
+
+            If File.Exists(filePath) Then
+
+                content =
+                File.ReadAllText(
+                    filePath,
+                    enc)
+
+            End If
+
+
+            Dim alreadyInFile As Boolean = False
+
+            If content <> "" Then
+
+                Dim lines() As String =
+                content.Split(
+                    New String() {
+                        vbCrLf,
+                        vbLf
+                    },
+                    StringSplitOptions.RemoveEmptyEntries)
+
+                For Each line As String In lines
+
+                    If NormalizeAiWord(line) = word Then
+                        alreadyInFile = True
+                        Exit For
+                    End If
+
+                Next
+
+            End If
+
+
+            If Not alreadyInFile Then
+
+                If content <> "" AndAlso
+               Not content.EndsWith(vbCrLf) AndAlso
+               Not content.EndsWith(vbLf) Then
+
+                    content &= Environment.NewLine
+
+                End If
+
+                content &=
+                word &
+                Environment.NewLine
+
+                File.WriteAllText(
+                filePath,
+                content,
+                enc)
+
+            End If
+
+        Catch ex As Exception
+
+            MessageBox.Show(
+            "Не удалось записать слово в файл запрещённых слов." &
+            Environment.NewLine &
+            Environment.NewLine &
+            "Слово: " &
+            word &
+            Environment.NewLine &
+            Environment.NewLine &
+            "Файл:" &
+            Environment.NewLine &
+            filePath &
+            Environment.NewLine &
+            Environment.NewLine &
+            "Ошибка:" &
+            Environment.NewLine &
+            ex.Message,
+            "Ошибка записи",
+            MessageBoxButtons.OK,
+            MessageBoxIcon.Error)
+
+        End Try
 
     End Sub
 End Class

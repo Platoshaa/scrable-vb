@@ -82,9 +82,8 @@ Public Class Form1
 
     Private ReadOnly TileColor As Color =
         Color.FromArgb(245, 238, 200)
-
     Private rackBalanceMode As RackBalanceMode =
-    RackBalanceMode.Comfort
+    RackBalanceMode.Classic
 
     Private btnRackMode As New Button()
     Private btnNewGame As New Button()
@@ -107,7 +106,7 @@ Public Class Form1
     Private Const ComputerPairCombinationPool As Integer = 45
     Private Const ComputerTripleCombinationPool As Integer = 18
     Private Const ComputerMaxPlacesPerMove As Integer = 4
-    Private Const ComputerThinkLimitMs As Integer = 5000
+    Private Const ComputerThinkLimitMs As Integer = 7000
     Private Const ComputerUiPulseMs As Integer = 100
     Private isComputerThinking As Boolean = False
     Private computerSearchWatch As Stopwatch = Nothing
@@ -984,19 +983,25 @@ Public Class Form1
 
     Private Sub RefillCurrentPlayerRack()
 
+        If currentPlayer Is Nothing Then
+            Exit Sub
+        End If
+
         While currentPlayer.Rack.Count < 7
 
-            Dim newTile As Tile =
-                bag.Draw()
+            Dim tile As Tile =
+            bag.Draw()
 
-            If newTile Is Nothing Then
+            If tile Is Nothing Then
                 Exit While
             End If
 
-            currentPlayer.Rack.Add(newTile)
+            currentPlayer.Rack.Add(tile)
 
         End While
-        EnsureBalancedRack(currentPlayer)
+
+        ApplyRackBalance(currentPlayer)
+
     End Sub
     Private Sub CreateStartTile()
 
@@ -1729,38 +1734,59 @@ Public Class Form1
     sender As Object,
     e As EventArgs)
 
-        If rackBalanceMode = RackBalanceMode.Comfort Then
+        Select Case rackBalanceMode
 
-            rackBalanceMode =
-                RackBalanceMode.VeryComfort
+            Case RackBalanceMode.Chance
+                rackBalanceMode = RackBalanceMode.Classic
 
-        Else
+            Case RackBalanceMode.Classic
+                rackBalanceMode = RackBalanceMode.Comfort
 
-            rackBalanceMode =
-                RackBalanceMode.Comfort
+            Case RackBalanceMode.Comfort
+                rackBalanceMode = RackBalanceMode.Chance
 
-        End If
+        End Select
 
-        UpdateRackModeButton()
-
-        Me.Invalidate()
+        UpdateRackModeButtonText()
 
     End Sub
 
+    Private Sub UpdateRackModeButtonText()
 
+        Select Case rackBalanceMode
+
+            Case RackBalanceMode.Chance
+                btnRackMode.Text = "Режим: случай"
+
+            Case RackBalanceMode.Classic
+                btnRackMode.Text = "Режим: классика"
+
+            Case RackBalanceMode.Comfort
+                btnRackMode.Text = "Режим: комфорт"
+
+        End Select
+
+    End Sub
     Private Sub UpdateRackModeButton()
 
-        If rackBalanceMode = RackBalanceMode.Comfort Then
+        Select Case rackBalanceMode
 
-            btnRackMode.Text =
-                "Режим: классический"
+            Case RackBalanceMode.Chance
 
-        Else
+                btnRackMode.Text =
+                "Режим: случай"
 
-            btnRackMode.Text =
+            Case RackBalanceMode.Classic
+
+                btnRackMode.Text =
+                "Режим: классика"
+
+            Case RackBalanceMode.Comfort
+
+                btnRackMode.Text =
                 "Режим: комфорт"
 
-        End If
+        End Select
 
     End Sub
     Private Sub EnsureBalancedRack(
@@ -1843,7 +1869,9 @@ Public Class Form1
 
             Next
 
-            EnsureBalancedRack(p)
+            For Each pl As Player In players
+                ApplyRackBalance(p)
+            Next
 
         Next
 
@@ -2146,18 +2174,8 @@ Public Class Form1
             EndAiThinkingIndicator()
 
         End Try
-        Dim debugText As String =
-    GetComputerMoveDebugText()
 
-        If debugText <> "" Then
 
-            MessageBox.Show(
-        debugText,
-        "Топ ходов ИИ",
-        MessageBoxButtons.OK,
-        MessageBoxIcon.Information)
-
-        End If
 
         If move Is Nothing Then
 
@@ -3328,10 +3346,12 @@ Public Class Form1
         End If
 
         If move.IsCrossMove Then
-            priority += 30
+            priority += 0
         End If
-
-        'priority += Math.Max(0, move.WordsCount - 1) * 20
+        If move.WordsCount >= 3 Then
+            priority += 60
+        End If
+        priority += Math.Max(0, move.WordsCount - 1) * 20
 
         'If Not move.IsCrossMove Then
         '    priority += Math.Max(0, move.Placements.Count - 1) * 10
@@ -4393,6 +4413,370 @@ Public Class Form1
         Next
 
         Return String.Join(", ", words)
+
+    End Function
+    Private Sub ApplyRackBalance(
+    player As Player)
+
+        If player Is Nothing Then
+            Exit Sub
+        End If
+
+        If bag Is Nothing Then
+            Exit Sub
+        End If
+
+        Select Case rackBalanceMode
+
+            Case RackBalanceMode.Chance
+
+                ' Полный случай. Ничего не исправляем.
+                Exit Sub
+
+            Case RackBalanceMode.Classic
+
+                EnsureMaxHardLetters(player, 3)
+                EnsureMinVowels(player, 1)
+                EnsureMinConsonants(player, 1)
+                EnsureMaxHardLetters(player, 3)
+
+            Case RackBalanceMode.Comfort
+
+                EnsureMaxHardLetters(player, 1)
+                EnsureMinVowels(player, 2)
+                EnsureMinConsonants(player, 3)
+                EnsureMaxHardLetters(player, 1)
+
+        End Select
+
+    End Sub
+    Private Function IsRussianVowel(
+    letter As Char
+) As Boolean
+
+        Return "АЕЁИОУЫЭЮЯ".Contains(letter)
+
+    End Function
+
+
+    Private Function IsHardLetter(
+        letter As Char
+    ) As Boolean
+
+        Return "ЖЗХЧЫЬФЦШЩЪЭЮ".Contains(letter)
+
+    End Function
+
+
+    Private Function IsConsonantLetter(
+        letter As Char
+    ) As Boolean
+
+        If letter = "*"c Then
+            Return False
+        End If
+
+        If IsRussianVowel(letter) Then
+            Return False
+        End If
+
+        Return "АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ".Contains(letter)
+
+    End Function
+
+
+    Private Function CountRackVowels(
+        player As Player
+    ) As Integer
+
+        Dim count As Integer = 0
+
+        For Each tile As Tile In player.Rack
+
+            If tile IsNot Nothing AndAlso
+               IsRussianVowel(tile.Letter) Then
+
+                count += 1
+
+            End If
+
+        Next
+
+        Return count
+
+    End Function
+
+
+    Private Function CountRackConsonants(
+        player As Player
+    ) As Integer
+
+        Dim count As Integer = 0
+
+        For Each tile As Tile In player.Rack
+
+            If tile IsNot Nothing AndAlso
+               IsConsonantLetter(tile.Letter) Then
+
+                count += 1
+
+            End If
+
+        Next
+
+        Return count
+
+    End Function
+
+
+    Private Function CountRackHardLetters(
+        player As Player
+    ) As Integer
+
+        Dim count As Integer = 0
+
+        For Each tile As Tile In player.Rack
+
+            If tile IsNot Nothing AndAlso
+               IsHardLetter(tile.Letter) Then
+
+                count += 1
+
+            End If
+
+        Next
+
+        Return count
+
+    End Function
+    Private Sub EnsureMinVowels(
+    player As Player,
+    minCount As Integer)
+
+        While CountRackVowels(player) < minCount
+
+            Dim newTile As Tile =
+                bag.DrawFromLetters("АЕИОУЯ")
+
+            If newTile Is Nothing Then
+
+                newTile =
+                    bag.DrawFromLetters("АЕЁИОУЫЭЮЯ")
+
+            End If
+
+            If newTile Is Nothing Then
+                Exit Sub
+            End If
+
+
+            Dim replaceIndex As Integer =
+                FindReplaceIndexForVowel(player)
+
+            If replaceIndex = -1 Then
+
+                bag.ReturnTile(newTile)
+                Exit Sub
+
+            End If
+
+
+            Dim oldTile As Tile =
+                player.Rack(replaceIndex)
+
+            player.Rack.RemoveAt(replaceIndex)
+            bag.ReturnTile(oldTile)
+            player.Rack.Add(newTile)
+
+        End While
+
+    End Sub
+
+
+    Private Sub EnsureMinConsonants(
+        player As Player,
+        minCount As Integer)
+
+        While CountRackConsonants(player) < minCount
+
+            Dim newTile As Tile =
+                bag.DrawFromLetters("НПРСТВКЛМДГБЙ")
+
+            If newTile Is Nothing Then
+
+                newTile =
+                    bag.DrawFromLetters("БВГДЖЗЙКЛМНПРСТФХЦЧШЩ")
+
+            End If
+
+            If newTile Is Nothing Then
+                Exit Sub
+            End If
+
+
+            Dim replaceIndex As Integer =
+                FindReplaceIndexForConsonant(player)
+
+            If replaceIndex = -1 Then
+
+                bag.ReturnTile(newTile)
+                Exit Sub
+
+            End If
+
+
+            Dim oldTile As Tile =
+                player.Rack(replaceIndex)
+
+            player.Rack.RemoveAt(replaceIndex)
+            bag.ReturnTile(oldTile)
+            player.Rack.Add(newTile)
+
+        End While
+
+    End Sub
+
+
+    Private Sub EnsureMaxHardLetters(
+        player As Player,
+        maxCount As Integer)
+
+        While CountRackHardLetters(player) > maxCount
+
+            Dim newTile As Tile =
+                bag.DrawFromLetters("АЕИОУЯНПРСТВКЛМДГБЙ")
+
+            If newTile Is Nothing Then
+                Exit Sub
+            End If
+
+
+            Dim replaceIndex As Integer =
+                FindHardLetterIndex(player)
+
+            If replaceIndex = -1 Then
+
+                bag.ReturnTile(newTile)
+                Exit Sub
+
+            End If
+
+
+            Dim oldTile As Tile =
+                player.Rack(replaceIndex)
+
+            player.Rack.RemoveAt(replaceIndex)
+            bag.ReturnTile(oldTile)
+            player.Rack.Add(newTile)
+
+        End While
+
+    End Sub
+    Private Function FindReplaceIndexForVowel(
+    player As Player
+) As Integer
+
+        ' Сначала меняем сложную согласную
+        For i = 0 To player.Rack.Count - 1
+
+            Dim tile As Tile =
+                player.Rack(i)
+
+            If tile IsNot Nothing AndAlso
+               tile.Letter <> "*"c AndAlso
+               Not IsRussianVowel(tile.Letter) AndAlso
+               IsHardLetter(tile.Letter) Then
+
+                Return i
+
+            End If
+
+        Next
+
+
+        ' Потом любую согласную
+        For i = 0 To player.Rack.Count - 1
+
+            Dim tile As Tile =
+                player.Rack(i)
+
+            If tile IsNot Nothing AndAlso
+               tile.Letter <> "*"c AndAlso
+               Not IsRussianVowel(tile.Letter) Then
+
+                Return i
+
+            End If
+
+        Next
+
+        Return -1
+
+    End Function
+
+
+    Private Function FindReplaceIndexForConsonant(
+        player As Player
+    ) As Integer
+
+        ' Сначала меняем сложную букву
+        For i = 0 To player.Rack.Count - 1
+
+            Dim tile As Tile =
+                player.Rack(i)
+
+            If tile IsNot Nothing AndAlso
+               tile.Letter <> "*"c AndAlso
+               IsHardLetter(tile.Letter) Then
+
+                Return i
+
+            End If
+
+        Next
+
+
+        ' Потом лишнюю гласную
+        For i = 0 To player.Rack.Count - 1
+
+            Dim tile As Tile =
+                player.Rack(i)
+
+            If tile IsNot Nothing AndAlso
+               tile.Letter <> "*"c AndAlso
+               IsRussianVowel(tile.Letter) Then
+
+                Return i
+
+            End If
+
+        Next
+
+        Return -1
+
+    End Function
+
+
+    Private Function FindHardLetterIndex(
+        player As Player
+    ) As Integer
+
+        For i = 0 To player.Rack.Count - 1
+
+            Dim tile As Tile =
+                player.Rack(i)
+
+            If tile IsNot Nothing AndAlso
+               tile.Letter <> "*"c AndAlso
+               IsHardLetter(tile.Letter) Then
+
+                Return i
+
+            End If
+
+        Next
+
+        Return -1
 
     End Function
 End Class

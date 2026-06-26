@@ -30,8 +30,8 @@
             Case RackBalanceMode.Comfort
                 BalanceComfort(player, bag)
 
-            Case RackBalanceMode.VeryComfort
-                BalanceVeryComfort(player, bag)
+                'Case RackBalanceMode.VeryComfort
+                '    BalanceVeryComfort(player, bag)
 
         End Select
 

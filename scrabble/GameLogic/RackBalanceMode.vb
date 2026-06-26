@@ -1,6 +1,5 @@
 ﻿Public Enum RackBalanceMode
-
+    Chance
+    Classic
     Comfort
-    VeryComfort
-
 End Enum
