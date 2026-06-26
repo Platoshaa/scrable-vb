@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Stats>
+  <TotalGames>2</TotalGames>
+  <BestWord Text="ДУЭЛЬ" Score="27" Player="njnz" />
+  <BestMove Score="62" Player="гуы" />
+  <Players>
+    <Player Name="гуы" Games="2" Wins="2" TotalScore="235" BestScore="129" />
+    <Player Name="тотя" Games="1" Wins="0" TotalScore="38" BestScore="38" />
+    <Player Name="njnz" Games="1" Wins="0" TotalScore="75" BestScore="75" />
+  </Players>
+</Stats>

@@ -1,7 +1,7 @@
 ﻿Imports System.Drawing
 Imports System.IO
 Imports System.Linq
-
+Imports System.Text
 
 Imports System.Diagnostics
 
@@ -16,8 +16,8 @@ Public Class Form1
     Private currentPlayer As Player
 
 
-    Private player1Name As String = "Мама"
-    Private player2Name As String = "Папа"
+    Private player1Name As String = ""
+    Private player2Name As String = ""
 
     Private lblAiThinking As New Label()
 
@@ -177,7 +177,6 @@ Public Class Form1
         btnCancelMove.Font = New Font("Arial", 9, FontStyle.Bold)
         Me.Text = "Эрудит"
 
-
         DictionaryManager.LoadDictionary(
     Path.Combine(
         Application.StartupPath,
@@ -189,18 +188,21 @@ Public Class Form1
         "ai_words.txt"))
 
 
+        Dim firstLaunch As Boolean =
+    Not HasLastGameSettings()
+
+        LoadLastGameSettings()
+        UpdateRackModeButton()
+
+        If firstLaunch Then
+            ShowNewGameDialog()
+        End If
 
         StartNewGame()
 
         UpdateAdaptiveLayout()
         UpdateButtonsLayout()
-        UpdateAiThinkingLabelLayout()
-
-        btnRackMode.BringToFront()
-        btnStats.BringToFront()
-        btnNewGame.BringToFront()
-        btnConfirmMove.BringToFront()
-        btnCancelMove.BringToFront()
+        UpdateRackModeButton()
 
         Me.Invalidate()
         Me.Refresh()
@@ -1802,24 +1804,9 @@ Public Class Form1
     sender As Object,
     e As EventArgs)
 
-        Using dlg As New NewGameDialog(
-        player1Name,
-        player2Name,
-        targetScore,
-        player2IsComputer)
-
-            If dlg.ShowDialog(Me) <> DialogResult.OK Then
-                Exit Sub
-            End If
-
-            player1Name = dlg.Player1Name
-            player2Name = dlg.Player2Name
-            targetScore = dlg.TargetScore
-            player2IsComputer = dlg.Player2IsComputer
-
-        End Using
-
-        StartNewGame()
+        If ShowNewGameDialog() Then
+            StartNewGame()
+        End If
 
     End Sub
     Private Sub StartNewGame()
@@ -2348,7 +2335,7 @@ Public Class Form1
 
     End Sub
     Private Function FindBestComputerMove() As ComputerMove
-        computerDebugMoves.Clear()
+        'computerDebugMoves.Clear()
         Dim singlePlacements As List(Of ComputerPlacement) =
         FindSingleComputerPlacements()
 
@@ -2374,7 +2361,7 @@ Public Class Form1
             If singleMove IsNot Nothing Then
 
                 singleMoves.Add(singleMove)
-                RememberComputerDebugMove(singleMove)
+                'RememberComputerDebugMove(singleMove)
                 If IsBetterComputerMove(singleMove, bestMove) Then
                     bestMove = singleMove
                 End If
@@ -2397,7 +2384,7 @@ Public Class Form1
                 If crossMove IsNot Nothing Then
 
                     crossMove.IsCrossMove = True
-                    RememberComputerDebugMove(crossMove)
+                    'RememberComputerDebugMove(crossMove)
                     If IsBetterComputerMove(crossMove, bestMove) Then
                         bestMove = crossMove
                     End If
@@ -2443,7 +2430,7 @@ Public Class Form1
                     })
 
                 If move IsNot Nothing Then
-                    RememberComputerDebugMove(move)
+                    'RememberComputerDebugMove(move)
                     If IsBetterComputerMove(move, bestMove) Then
                         bestMove = move
                     End If
@@ -2479,7 +2466,7 @@ Public Class Form1
                             })
 
                         If move IsNot Nothing Then
-                            RememberComputerDebugMove(move)
+                            'RememberComputerDebugMove(move)
                             If IsBetterComputerMove(move, bestMove) Then
                                 bestMove = move
                             End If
@@ -4326,67 +4313,67 @@ Public Class Form1
         End If
 
     End Sub
-    Private Sub RememberComputerDebugMove(
-    move As ComputerMove)
+    'Private Sub RememberComputerDebugMove(
+    'move As ComputerMove)
 
-        If move Is Nothing Then
-            Exit Sub
-        End If
+    '    If move Is Nothing Then
+    '        Exit Sub
+    '    End If
 
-        computerDebugMoves.Add(move)
+    '    computerDebugMoves.Add(move)
 
-        computerDebugMoves.Sort(
-            Function(a As ComputerMove, b As ComputerMove)
+    '    computerDebugMoves.Sort(
+    '        Function(a As ComputerMove, b As ComputerMove)
 
-                Return GetComputerMovePriority(b).
-                    CompareTo(GetComputerMovePriority(a))
+    '            Return GetComputerMovePriority(b).
+    '                CompareTo(GetComputerMovePriority(a))
 
-            End Function)
+    '        End Function)
 
-        While computerDebugMoves.Count > ComputerDebugMoveLimit
-            computerDebugMoves.RemoveAt(computerDebugMoves.Count - 1)
-        End While
+    '    While computerDebugMoves.Count > ComputerDebugMoveLimit
+    '        computerDebugMoves.RemoveAt(computerDebugMoves.Count - 1)
+    '    End While
 
-    End Sub
+    'End Sub
 
 
-    Private Function GetComputerMoveDebugText() As String
+    'Private Function GetComputerMoveDebugText() As String
 
-        If computerDebugMoves Is Nothing OrElse
-       computerDebugMoves.Count = 0 Then
+    '    If computerDebugMoves Is Nothing OrElse
+    '   computerDebugMoves.Count = 0 Then
 
-            Return ""
+    '        Return ""
 
-        End If
+    '    End If
 
-        Dim text As String = ""
+    '    Dim text As String = ""
 
-        For i = 0 To computerDebugMoves.Count - 1
+    '    For i = 0 To computerDebugMoves.Count - 1
 
-            Dim move As ComputerMove =
-            computerDebugMoves(i)
+    '        Dim move As ComputerMove =
+    '        computerDebugMoves(i)
 
-            text &=
-            (i + 1).ToString() &
-            ". " &
-            GetComputerMoveText(move) &
-            " | очки: " &
-            move.Score.ToString() &
-            " | приоритет: " &
-            GetComputerMovePriority(move).ToString() &
-            " | букв: " &
-            move.TilesUsedCount.ToString() &
-            " | слов: " &
-            move.WordsCount.ToString() &
-            " | крест: " &
-            move.IsCrossMove.ToString() &
-            Environment.NewLine
+    '        text &=
+    '        (i + 1).ToString() &
+    '        ". " &
+    '        GetComputerMoveText(move) &
+    '        " | очки: " &
+    '        move.Score.ToString() &
+    '        " | приоритет: " &
+    '        GetComputerMovePriority(move).ToString() &
+    '        " | букв: " &
+    '        move.TilesUsedCount.ToString() &
+    '        " | слов: " &
+    '        move.WordsCount.ToString() &
+    '        " | крест: " &
+    '        move.IsCrossMove.ToString() &
+    '        Environment.NewLine
 
-        Next
+    '    Next
 
-        Return text
+    '    Return text
 
-    End Function
+    'End Function
     Private Function GetComputerMoveText(
     move As ComputerMove
 ) As String
@@ -4777,6 +4764,185 @@ Public Class Form1
         Next
 
         Return -1
+
+    End Function
+    Private Function GetSettingsFolderPath() As String
+
+        Return Path.Combine(
+            Environment.GetFolderPath(
+                Environment.SpecialFolder.ApplicationData),
+            "EruditClone")
+
+    End Function
+
+
+    Private Function GetLastGameSettingsPath() As String
+
+        Return Path.Combine(
+            GetSettingsFolderPath(),
+            "last_game.txt")
+
+    End Function
+
+
+    Private Sub LoadLastGameSettings()
+
+        Dim filePath As String =
+            GetLastGameSettingsPath()
+
+        If Not File.Exists(filePath) Then
+            Exit Sub
+        End If
+
+        Try
+
+            For Each line As String In File.ReadAllLines(
+                filePath,
+                Encoding.UTF8)
+
+                Dim eqIndex As Integer =
+                    line.IndexOf("="c)
+
+                If eqIndex <= 0 Then
+                    Continue For
+                End If
+
+                Dim key As String =
+                    line.Substring(0, eqIndex).Trim()
+
+                Dim value As String =
+                    line.Substring(eqIndex + 1).Trim()
+
+                Select Case key
+
+                    Case "Player1Name"
+
+                        If value <> "" Then
+                            player1Name = value
+                        End If
+
+                    Case "Player2Name"
+
+                        If value <> "" Then
+                            player2Name = value
+                        End If
+
+                    Case "Player2IsComputer"
+
+                        Boolean.TryParse(
+                            value,
+                            player2IsComputer)
+
+                    Case "TargetScore"
+
+                        Dim parsedScore As Integer
+
+                        If Integer.TryParse(value, parsedScore) Then
+
+                            If parsedScore > 0 Then
+                                targetScore = parsedScore
+                            End If
+
+                        End If
+
+                    Case "RackBalanceMode"
+
+                        If [Enum].IsDefined(
+                            GetType(RackBalanceMode),
+                            value) Then
+
+                            rackBalanceMode =
+                                CType(
+                                    [Enum].Parse(
+                                        GetType(RackBalanceMode),
+                                        value),
+                                    RackBalanceMode)
+
+                        End If
+
+                End Select
+
+            Next
+
+        Catch
+
+            ' Если файл настроек битый — просто запускаемся с дефолтами.
+
+        End Try
+
+    End Sub
+
+
+    Private Sub SaveLastGameSettings()
+
+        Try
+
+            Dim folderPath As String =
+                GetSettingsFolderPath()
+
+            If Not Directory.Exists(folderPath) Then
+                Directory.CreateDirectory(folderPath)
+            End If
+
+            Dim filePath As String =
+                GetLastGameSettingsPath()
+
+            Dim lines As New List(Of String)
+
+            lines.Add("Player1Name=" & player1Name)
+            lines.Add("Player2Name=" & player2Name)
+            lines.Add("Player2IsComputer=" & player2IsComputer.ToString())
+            lines.Add("TargetScore=" & targetScore.ToString())
+            lines.Add("RackBalanceMode=" & rackBalanceMode.ToString())
+
+            File.WriteAllLines(
+                filePath,
+                lines,
+                Encoding.UTF8)
+
+        Catch
+
+            ' Настройки не критичны. Если не сохранилось — игру не ломаем.
+
+        End Try
+
+    End Sub
+    Private Sub Form1_FormClosing(
+    sender As Object,
+    e As FormClosingEventArgs) _
+    Handles Me.FormClosing
+
+        SaveLastGameSettings()
+
+    End Sub
+    Private Function HasLastGameSettings() As Boolean
+
+        Return File.Exists(
+            GetLastGameSettingsPath())
+
+    End Function
+    Private Function ShowNewGameDialog() As Boolean
+
+        Using dlg As New NewGameDialog(
+            player1Name,
+            player2Name,
+            targetScore,
+            player2IsComputer)
+
+            If dlg.ShowDialog(Me) <> DialogResult.OK Then
+                Return False
+            End If
+
+            player1Name = dlg.Player1Name
+            player2Name = dlg.Player2Name
+            targetScore = dlg.TargetScore
+            player2IsComputer = dlg.Player2IsComputer
+
+        End Using
+
+        SaveLastGameSettings()
+
+        Return True
 
     End Function
 End Class

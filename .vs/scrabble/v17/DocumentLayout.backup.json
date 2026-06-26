@@ -7,28 +7,32 @@
       "RelativeMoniker": "D:0:0:{45C9BFA4-7226-4388-B6AB-BA48F08F307D}|scrabble\\scrabble.vbproj|solutionrelative:scrabble\\form1.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{45C9BFA4-7226-4388-B6AB-BA48F08F307D}|scrabble\\scrabble.vbproj|C:\\Users\\Platosha\\source\\repos\\scrabble\\scrabble\\moveconfirmdialog.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}",
-      "RelativeMoniker": "D:0:0:{45C9BFA4-7226-4388-B6AB-BA48F08F307D}|scrabble\\scrabble.vbproj|solutionrelative:scrabble\\moveconfirmdialog.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{45C9BFA4-7226-4388-B6AB-BA48F08F307D}|scrabble\\scrabble.vbproj|C:\\Users\\Platosha\\source\\repos\\scrabble\\scrabble\\dictionary\\dictionarymanager.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}",
       "RelativeMoniker": "D:0:0:{45C9BFA4-7226-4388-B6AB-BA48F08F307D}|scrabble\\scrabble.vbproj|solutionrelative:scrabble\\dictionary\\dictionarymanager.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{45C9BFA4-7226-4388-B6AB-BA48F08F307D}|scrabble\\scrabble.vbproj|C:\\Users\\Platosha\\source\\repos\\scrabble\\scrabble\\gamelogic\\rackbalancer.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}",
-      "RelativeMoniker": "D:0:0:{45C9BFA4-7226-4388-B6AB-BA48F08F307D}|scrabble\\scrabble.vbproj|solutionrelative:scrabble\\gamelogic\\rackbalancer.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}"
+      "AbsoluteMoniker": "D:0:0:{45C9BFA4-7226-4388-B6AB-BA48F08F307D}|scrabble\\scrabble.vbproj|C:\\Users\\Platosha\\source\\repos\\scrabble\\scrabble\\board\\cell.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}",
+      "RelativeMoniker": "D:0:0:{45C9BFA4-7226-4388-B6AB-BA48F08F307D}|scrabble\\scrabble.vbproj|solutionrelative:scrabble\\board\\cell.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{45C9BFA4-7226-4388-B6AB-BA48F08F307D}|scrabble\\scrabble.vbproj|C:\\Users\\Platosha\\source\\repos\\scrabble\\scrabble\\gamelogic\\rackbalancemode.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}",
       "RelativeMoniker": "D:0:0:{45C9BFA4-7226-4388-B6AB-BA48F08F307D}|scrabble\\scrabble.vbproj|solutionrelative:scrabble\\gamelogic\\rackbalancemode.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{45C9BFA4-7226-4388-B6AB-BA48F08F307D}|scrabble\\scrabble.vbproj|C:\\Users\\Platosha\\source\\repos\\scrabble\\scrabble\\ai_bad_words.txt||{8B382828-6202-11D1-8870-0000F87579D2}",
-      "RelativeMoniker": "D:0:0:{45C9BFA4-7226-4388-B6AB-BA48F08F307D}|scrabble\\scrabble.vbproj|solutionrelative:scrabble\\ai_bad_words.txt||{8B382828-6202-11D1-8870-0000F87579D2}"
+      "AbsoluteMoniker": "D:0:0:{45C9BFA4-7226-4388-B6AB-BA48F08F307D}|scrabble\\scrabble.vbproj|C:\\Users\\Platosha\\source\\repos\\scrabble\\scrabble\\gamelogic\\rackbalancer.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}",
+      "RelativeMoniker": "D:0:0:{45C9BFA4-7226-4388-B6AB-BA48F08F307D}|scrabble\\scrabble.vbproj|solutionrelative:scrabble\\gamelogic\\rackbalancer.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{45C9BFA4-7226-4388-B6AB-BA48F08F307D}|scrabble\\scrabble.vbproj|C:\\Users\\Platosha\\source\\repos\\scrabble\\scrabble\\moveconfirmdialog.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}",
+      "RelativeMoniker": "D:0:0:{45C9BFA4-7226-4388-B6AB-BA48F08F307D}|scrabble\\scrabble.vbproj|solutionrelative:scrabble\\moveconfirmdialog.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{45C9BFA4-7226-4388-B6AB-BA48F08F307D}|scrabble\\scrabble.vbproj|C:\\Users\\Platosha\\source\\repos\\scrabble\\scrabble\\ai_words.txt||{8B382828-6202-11D1-8870-0000F87579D2}",
       "RelativeMoniker": "D:0:0:{45C9BFA4-7226-4388-B6AB-BA48F08F307D}|scrabble\\scrabble.vbproj|solutionrelative:scrabble\\ai_words.txt||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{45C9BFA4-7226-4388-B6AB-BA48F08F307D}|scrabble\\scrabble.vbproj|C:\\Users\\Platosha\\source\\repos\\scrabble\\scrabble\\ai_bad_words.txt||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{45C9BFA4-7226-4388-B6AB-BA48F08F307D}|scrabble\\scrabble.vbproj|solutionrelative:scrabble\\ai_bad_words.txt||{8B382828-6202-11D1-8870-0000F87579D2}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{45C9BFA4-7226-4388-B6AB-BA48F08F307D}|scrabble\\scrabble.vbproj|C:\\Users\\Platosha\\source\\repos\\scrabble\\scrabble\\board\\simpleai.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}",
@@ -65,10 +69,6 @@
     {
       "AbsoluteMoniker": "D:0:0:{45C9BFA4-7226-4388-B6AB-BA48F08F307D}|scrabble\\scrabble.vbproj|C:\\Users\\Platosha\\source\\repos\\scrabble\\scrabble\\gamelogic\\scoremanager.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}",
       "RelativeMoniker": "D:0:0:{45C9BFA4-7226-4388-B6AB-BA48F08F307D}|scrabble\\scrabble.vbproj|solutionrelative:scrabble\\gamelogic\\scoremanager.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{45C9BFA4-7226-4388-B6AB-BA48F08F307D}|scrabble\\scrabble.vbproj|C:\\Users\\Platosha\\source\\repos\\scrabble\\scrabble\\board\\cell.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}",
-      "RelativeMoniker": "D:0:0:{45C9BFA4-7226-4388-B6AB-BA48F08F307D}|scrabble\\scrabble.vbproj|solutionrelative:scrabble\\board\\cell.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{45C9BFA4-7226-4388-B6AB-BA48F08F307D}|scrabble\\scrabble.vbproj|C:\\Users\\Platosha\\source\\repos\\scrabble\\scrabble\\board\\board.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}",
@@ -118,20 +118,20 @@
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 5,
               "Title": "MoveConfirmDialog.vb",
               "DocumentMoniker": "C:\\Users\\Platosha\\source\\repos\\scrabble\\scrabble\\MoveConfirmDialog.vb",
               "RelativeDocumentMoniker": "scrabble\\MoveConfirmDialog.vb",
               "ToolTip": "C:\\Users\\Platosha\\source\\repos\\scrabble\\scrabble\\MoveConfirmDialog.vb",
               "RelativeToolTip": "scrabble\\MoveConfirmDialog.vb",
-              "ViewState": "AgIAAJkAAAAAAAAAAAAmwKwAAAAJAAAAAAAAAA==",
+              "ViewState": "AgIAAB4AAAAAAAAAAIAwwDUAAAAQAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003361|",
               "WhenOpened": "2026-06-25T13:09:30.866Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
+              "DocumentIndex": 7,
               "Title": "ai_bad_words.txt",
               "DocumentMoniker": "C:\\Users\\Platosha\\source\\repos\\scrabble\\scrabble\\ai_bad_words.txt",
               "RelativeDocumentMoniker": "scrabble\\ai_bad_words.txt",
@@ -139,7 +139,8 @@
               "RelativeToolTip": "scrabble\\ai_bad_words.txt",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAIAAAAEAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003109|",
-              "WhenOpened": "2026-06-25T12:31:19.497Z"
+              "WhenOpened": "2026-06-25T12:31:19.497Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
@@ -147,9 +148,9 @@
               "Title": "Form1.vb",
               "DocumentMoniker": "C:\\Users\\Platosha\\source\\repos\\scrabble\\scrabble\\Form1.vb",
               "RelativeDocumentMoniker": "scrabble\\Form1.vb",
-              "ToolTip": "C:\\Users\\Platosha\\source\\repos\\scrabble\\scrabble\\Form1.vb*",
-              "RelativeToolTip": "scrabble\\Form1.vb*",
-              "ViewState": "AgIAAHMIAAAAAAAAAIAwwIcIAAAcAAAAAAAAAA==",
+              "ToolTip": "C:\\Users\\Platosha\\source\\repos\\scrabble\\scrabble\\Form1.vb",
+              "RelativeToolTip": "scrabble\\Form1.vb",
+              "ViewState": "AgIAAB8TAAAAAAAAAAApwD4TAAAYAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003361|",
               "WhenOpened": "2026-06-08T18:07:27.184Z",
               "EditorCaption": ""
@@ -164,37 +165,38 @@
               "RelativeToolTip": "scrabble\\ai_words.txt",
               "ViewState": "AgIAAF00AAAAAAAAAADgv3I0AAAFAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003109|",
-              "WhenOpened": "2026-06-23T08:35:07.352Z"
+              "WhenOpened": "2026-06-23T08:35:07.352Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 4,
               "Title": "RackBalancer.vb",
               "DocumentMoniker": "C:\\Users\\Platosha\\source\\repos\\scrabble\\scrabble\\GameLogic\\RackBalancer.vb",
               "RelativeDocumentMoniker": "scrabble\\GameLogic\\RackBalancer.vb",
               "ToolTip": "C:\\Users\\Platosha\\source\\repos\\scrabble\\scrabble\\GameLogic\\RackBalancer.vb",
               "RelativeToolTip": "scrabble\\GameLogic\\RackBalancer.vb",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAB4AAAArAAAAAAAAAA==",
+              "ViewState": "AgIAAFkAAAAAAAAAAIAwwHAAAAAYAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003361|",
               "WhenOpened": "2026-06-22T16:42:21.856Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 3,
               "Title": "RackBalanceMode.vb",
               "DocumentMoniker": "C:\\Users\\Platosha\\source\\repos\\scrabble\\scrabble\\GameLogic\\RackBalanceMode.vb",
               "RelativeDocumentMoniker": "scrabble\\GameLogic\\RackBalanceMode.vb",
               "ToolTip": "C:\\Users\\Platosha\\source\\repos\\scrabble\\scrabble\\GameLogic\\RackBalanceMode.vb",
               "RelativeToolTip": "scrabble\\GameLogic\\RackBalanceMode.vb",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAQAAAAIAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAqwAQAAAAIAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003361|",
               "WhenOpened": "2026-06-22T16:41:47.467Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 16,
+              "DocumentIndex": 2,
               "Title": "Cell.vb",
               "DocumentMoniker": "C:\\Users\\Platosha\\source\\repos\\scrabble\\scrabble\\Board\\Cell.vb",
               "RelativeDocumentMoniker": "scrabble\\Board\\Cell.vb",
@@ -202,11 +204,12 @@
               "RelativeToolTip": "scrabble\\Board\\Cell.vb",
               "ViewState": "AgIAAAMAAAAAAAAAAAAAAA8AAAAJAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003361|",
-              "WhenOpened": "2026-06-08T18:15:56.686Z"
+              "WhenOpened": "2026-06-08T18:15:56.686Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 14,
+              "DocumentIndex": 15,
               "Title": "TileInstance.vb",
               "DocumentMoniker": "C:\\Users\\Platosha\\source\\repos\\scrabble\\scrabble\\Tiles\\TileInstance.vb",
               "RelativeDocumentMoniker": "scrabble\\Tiles\\TileInstance.vb",
@@ -218,20 +221,20 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 1,
               "Title": "DictionaryManager.vb",
               "DocumentMoniker": "C:\\Users\\Platosha\\source\\repos\\scrabble\\scrabble\\Dictionary\\DictionaryManager.vb",
               "RelativeDocumentMoniker": "scrabble\\Dictionary\\DictionaryManager.vb",
               "ToolTip": "C:\\Users\\Platosha\\source\\repos\\scrabble\\scrabble\\Dictionary\\DictionaryManager.vb",
               "RelativeToolTip": "scrabble\\Dictionary\\DictionaryManager.vb",
-              "ViewState": "AgIAABIBAAAAAAAAAAAwwCYBAAAhAAAAAAAAAA==",
+              "ViewState": "AgIAABIBAAAAAAAAAAAwwCEBAAAfAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003361|",
               "WhenOpened": "2026-06-15T05:55:49.49Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 7,
+              "DocumentIndex": 8,
               "Title": "SimpleAi.vb",
               "DocumentMoniker": "C:\\Users\\Platosha\\source\\repos\\scrabble\\scrabble\\Board\\SimpleAi.vb",
               "RelativeDocumentMoniker": "scrabble\\Board\\SimpleAi.vb",
@@ -243,7 +246,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 8,
+              "DocumentIndex": 9,
               "Title": "NewGameDialog.vb",
               "DocumentMoniker": "C:\\Users\\Platosha\\source\\repos\\scrabble\\scrabble\\GameLogic\\NewGameDialog.vb",
               "RelativeDocumentMoniker": "scrabble\\GameLogic\\NewGameDialog.vb",
@@ -255,7 +258,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 11,
+              "DocumentIndex": 12,
               "Title": "Form1.vb [Design]",
               "DocumentMoniker": "C:\\Users\\Platosha\\source\\repos\\scrabble\\scrabble\\Form1.vb",
               "RelativeDocumentMoniker": "scrabble\\Form1.vb",
@@ -266,7 +269,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 13,
+              "DocumentIndex": 14,
               "Title": "WordBuilder.vb",
               "DocumentMoniker": "C:\\Users\\Platosha\\source\\repos\\scrabble\\scrabble\\Dictionary\\WordBuilder.vb",
               "RelativeDocumentMoniker": "scrabble\\Dictionary\\WordBuilder.vb",
@@ -278,7 +281,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 12,
+              "DocumentIndex": 13,
               "Title": "TileBag.vb",
               "DocumentMoniker": "C:\\Users\\Platosha\\source\\repos\\scrabble\\scrabble\\Tiles\\TileBag.vb",
               "RelativeDocumentMoniker": "scrabble\\Tiles\\TileBag.vb",
@@ -290,7 +293,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 9,
+              "DocumentIndex": 10,
               "Title": "Player.vb",
               "DocumentMoniker": "C:\\Users\\Platosha\\source\\repos\\scrabble\\scrabble\\Players\\Player.vb",
               "RelativeDocumentMoniker": "scrabble\\Players\\Player.vb",
@@ -302,7 +305,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 10,
+              "DocumentIndex": 11,
               "Title": "StatsManager.vb",
               "DocumentMoniker": "C:\\Users\\Platosha\\source\\repos\\scrabble\\scrabble\\GameLogic\\StatsManager.vb",
               "RelativeDocumentMoniker": "scrabble\\GameLogic\\StatsManager.vb",
@@ -338,7 +341,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 15,
+              "DocumentIndex": 16,
               "Title": "ScoreManager.vb",
               "DocumentMoniker": "C:\\Users\\Platosha\\source\\repos\\scrabble\\scrabble\\GameLogic\\ScoreManager.vb",
               "RelativeDocumentMoniker": "scrabble\\GameLogic\\ScoreManager.vb",
